@@ -1,0 +1,7 @@
+*.o
+*.gch
+*.txt
+zeta*/zeta
+zeta0/utest
+mach*/mach
+mach0/utest
