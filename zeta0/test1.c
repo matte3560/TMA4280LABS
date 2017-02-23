@@ -34,10 +34,10 @@ int main(int argc, char** argv)
 	{
 		printf("Writing result to %s\n", output);
 	}
-	fprintf( fp, "series:\n");
+	fprintf( fp, "Series (n = 3)\n");
 	fprintf( fp, "Expected value: %.10f\nComputed value: %.10f\nError: %.10f\n\n",
 			expected_series, computed_series, error_series );
-	fprintf( fp, "pi:\n");
+	fprintf( fp, "Pi (n = 3)\n");
 	fprintf( fp, "Expected value: %.10f\nComputed value: %.10f\nError: %.10f\n",
 			expected_pi, computed_pi, error_pi );
 }
