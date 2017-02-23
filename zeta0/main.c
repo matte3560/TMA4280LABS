@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 	{
 		printf("Writing result to %s\n", output);
 	}
-	fprintf( fp, "%.10f\n", pi );
+	fprintf( fp, "(n = %i): %.10f\n", n, pi );
 
 	return 0;
 }
