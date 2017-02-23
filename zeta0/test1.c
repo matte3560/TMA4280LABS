@@ -10,15 +10,18 @@ int main(int argc, char** argv)
 {
 	const char* output = "utest.txt";
 
-	/* Correct output for series with n = 3 */
-	double correct =
+	/* Expected output for series with n = 3 */
+	double expected_series =
 		  1 / pow( 1, 2 )
 		+ 1 / pow( 2, 2 )
 		+ 1 / pow( 3, 2 );
+	double expected_pi = sqrt( expected_series*6 );
 
 	/* Get the computed value and calculate error */
-	double computed = zeta_sum(3);
-	double error = fabs( correct - computed );
+	double computed_series = zeta_sum(3);
+	double computed_pi = zeta_pi(3);
+	double error_series = fabs( expected_series - computed_series );
+	double error_pi = fabs( expected_pi - computed_pi );
 
 	/* Output result to textfile */
 	FILE* fp = fopen( output, "w" );
@@ -31,6 +34,11 @@ int main(int argc, char** argv)
 	{
 		printf("Writing result to %s\n", output);
 	}
-	fprintf( fp, "Correct value: %.10f\nComputed value: %.10f\nError: %.10f\n", correct, computed, error );
+	fprintf( fp, "series:\n");
+	fprintf( fp, "Expected value: %.10f\nComputed value: %.10f\nError: %.10f\n\n",
+			expected_series, computed_series, error_series );
+	fprintf( fp, "pi:\n");
+	fprintf( fp, "Expected value: %.10f\nComputed value: %.10f\nError: %.10f\n",
+			expected_pi, computed_pi, error_pi );
 }
 
