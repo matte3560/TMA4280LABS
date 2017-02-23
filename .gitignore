@@ -1,5 +1,5 @@
 *.o
-*.gch
+*.d
 *.txt
 zeta*/zeta
 zeta0/test[1-2]
