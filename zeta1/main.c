@@ -1,14 +1,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <mpi.h>
+#include <assert.h>
 
 #include "zeta.h"
+
+/* Global vars for convenience */
+int mpi_size, mpi_rank;
 
 
 int main(int argc, char** argv)
 {
 	int32_t n;
 	const char* output = "result.txt";
+
+	/* Initialize MPI */
+	MPI_Init( &argc, &argv );
+	MPI_Comm_size( MPI_COMM_WORLD, &mpi_size );
+	MPI_Comm_rank( MPI_COMM_WORLD, &mpi_rank );
+	assert( mpi_size % 2 == 0 ); // Make sure we have a valid number of processes
 
 	/* Check args */
 	if ( argc != 2 )
@@ -28,18 +39,23 @@ int main(int argc, char** argv)
 	/* Calculate pi */
 	double pi = zeta_pi(n);
 
-	/* Output result to textfile */
-	FILE* fp = fopen( output, "w" );
-	if ( fp == NULL )
+	if ( mpi_rank == 0 )
 	{
-		printf("Failed to write result to textfile\n");
-		exit(1);
+		/* Output result to textfile */
+		FILE* fp = fopen( output, "w" );
+		if ( fp == NULL )
+		{
+			printf("Failed to write result to textfile\n");
+		}
+		else
+		{
+			printf("Writing result to %s\n", output);
+		}
+		fprintf( fp, "(n = %i): %.10f\n", n, pi );
 	}
-	else
-	{
-		printf("Writing result to %s\n", output);
-	}
-	fprintf( fp, "(n = %i): %.10f\n", n, pi );
+
+	/* Terminate MPI env */
+	MPI_Finalize();
 
 	return 0;
 }

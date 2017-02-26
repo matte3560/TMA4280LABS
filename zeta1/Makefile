@@ -1,4 +1,4 @@
-CC=gcc
+CC=mpicc
 CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra
 LDLIBS=-lm
 
