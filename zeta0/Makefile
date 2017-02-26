@@ -2,9 +2,8 @@ CC=gcc
 CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra
 LDLIBS=-lm
 
-HEADER=zeta.h
-SOURCE=main.c test1.c test2.c zeta.c
-OBJ=$(SOURCE:.c=.o)
+SRC=main.c test1.c test2.c zeta.c
+OBJ=$(SRC:.c=.o)
 COMMON_OBJ=zeta.o
 DEPS=$(OBJ:.o=.d)
 
@@ -29,7 +28,6 @@ $(TEST2): test2.o $(COMMON_OBJ)
 -include $(DEPS)
 
 .PHONY: clean utest vtest
-print-%  : ; @echo $* = $($*)
 
 utest: $(TEST1)
 	./$(TEST1)
@@ -38,4 +36,4 @@ vtest: $(TEST2)
 	./$(TEST2)
 
 clean:
-	rm -f *.o *.d $(TARGET) $(TEST1) $(TEST2) *.txt
+	rm -f *.o *.d *.txt $(TARGET) $(TEST1) $(TEST2)
