@@ -2,7 +2,6 @@
 
 #include <math.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <mpi.h>
 
 extern int mpi_size, mpi_rank;
@@ -33,8 +32,6 @@ double zeta_sum( int32_t n )
 		{
 			vector[i] = zeta_term(i+1); // Element 0 holds v_1
 		}
-
-		printf("finished generating elements\n");
 	}
 
 	/* Distribute vector elements */
@@ -59,8 +56,11 @@ double zeta_sum( int32_t n )
 
 	/* Calculate global sum */
 	double sum = 0;
-	for ( int32_t i = 0; i < mpi_size; i++ )
-		sum += vector_part_sums[i];
+	if ( mpi_rank == 0 )
+	{
+		for ( int32_t i = 0; i < mpi_size; i++ )
+			sum += vector_part_sums[i];
+	}
 
 	/* Free memory */
 	if ( mpi_rank == 0 )
