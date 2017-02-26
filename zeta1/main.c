@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 	if ( argc != 2 )
 	{
 		printf("Invalid number of arguments\n");
+		MPI_Finalize();
 		exit(1);
 	}
 
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
 	if ( n < 2 ) 
 	{
 		printf("n must be greater than 1\n");
+		MPI_Finalize();
 		exit(1);
 	}
 
@@ -46,12 +48,14 @@ int main(int argc, char** argv)
 		if ( fp == NULL )
 		{
 			printf("Failed to write result to textfile\n");
+			MPI_Finalize();
+			exit(1);
 		}
 		else
 		{
 			printf("Writing result to %s\n", output);
 		}
-		fprintf( fp, "(n = %i): %.10f\n", n, pi );
+		fprintf( fp, "(P = %i, n = %i): %.10f\n", mpi_size, n, pi );
 	}
 
 	/* Terminate MPI env */

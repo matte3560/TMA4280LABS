@@ -52,7 +52,7 @@ double zeta_sum( int32_t n )
 	double* vector_part_sums = NULL;
 	if ( mpi_rank == 0 )
 		vector_part_sums = (double*)malloc( sizeof(double) * mpi_size );
-	MPI_Gather( &partial_sum, 1, MPI_DOUBLE, vector_part_sums, mpi_size, MPI_DOUBLE, 0, MPI_COMM_WORLD );
+	MPI_Gather( &partial_sum, 1, MPI_DOUBLE, vector_part_sums, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD );
 
 	/* Calculate global sum */
 	double sum = 0;
