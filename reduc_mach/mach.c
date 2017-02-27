@@ -56,8 +56,7 @@ double mach_sum( double x, int32_t n )
 	/* Use MPI function */
 	MPI_Allreduce( &partial_sum, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
 #else
-	double recv_sum = 0;
-
+	/* Perform recursive doubling sum */
 	for ( int32_t d = 0; d < log2( mpi_size ); d++ )
 	{
 		/* Calculate the rank of the partner process for this iteration */
@@ -65,10 +64,11 @@ double mach_sum( double x, int32_t n )
 		int32_t partner = mpi_rank ^ mask; // XOR
 
 		/* Exchange sums with paired process */
+		double recv_sum;
 		MPI_Request req;
 		MPI_Isend( &partial_sum, 1, MPI_DOUBLE, partner, 0, MPI_COMM_WORLD, &req );
 		MPI_Recv( &recv_sum, 1, MPI_DOUBLE, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
-		MPI_Request_free( &req );
+		MPI_Wait( &req, MPI_STATUS_IGNORE );
 
 		/* Update partial sum */
 		partial_sum += recv_sum;
