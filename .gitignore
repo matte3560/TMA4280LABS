@@ -11,3 +11,8 @@ reduc_mach/mach
 reduc_mach/test1
 reduc_mach/mach_rd
 reduc_mach/test1_rd
+
+reduc/zeta
+reduc/test1
+reduc/zeta_rd
+reduc/test1_rd
