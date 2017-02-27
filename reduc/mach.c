@@ -56,35 +56,23 @@ double mach_sum( double x, int32_t n )
 	/* Use MPI function */
 	MPI_Allreduce( &partial_sum, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
 #else
-	int32_t mask = (mpi_rank % 2 == 0) ? 1 : -1;
 	double recv_sum = 0;
 
-	while ( abs( mask ) < mpi_size )
+	for ( int32_t d = 0; d < log2( mpi_size ); d++ )
 	{
 		/* Calculate the rank of the partner process for this iteration */
-		int partner = ( mpi_size + mpi_rank + mask ) % mpi_size;
+		int32_t mask = pow( 2, d );
+		int32_t partner = mpi_rank ^ mask; // XOR
 
-		printf("rank %i, mask %i, partner %i\n", mpi_rank, mask, partner);
 		/* Exchange sums with paired process */
 		MPI_Request req;
 		MPI_Isend( &partial_sum, 1, MPI_DOUBLE, partner, 0, MPI_COMM_WORLD, &req );
 		MPI_Recv( &recv_sum, 1, MPI_DOUBLE, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
 		MPI_Request_free( &req );
 
-		MPI_Barrier( MPI_COMM_WORLD );
-
-		printf("sendrecv success\n");
-		sleep(1);
-
-		MPI_Barrier( MPI_COMM_WORLD );
-
 		/* Update partial sum */
 		partial_sum += recv_sum;
-
-		/* Update mask */
-		mask *= 2;
 	}
-	printf("Finished\n");
 
 	sum = partial_sum;
 #endif
