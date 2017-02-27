@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <mpi.h>
 
+#include <stdio.h>
+
 extern int mpi_size, mpi_rank;
 
 double mach_term( double x, int32_t i )
@@ -54,8 +56,37 @@ double mach_sum( double x, int32_t n )
 	/* Use MPI function */
 	MPI_Allreduce( &partial_sum, &sum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD );
 #else
-	/* Use recursive doubling sum */
-	// TODO: Implement this
+	int32_t mask = (mpi_rank % 2 == 0) ? 1 : -1;
+	double recv_sum = 0;
+
+	while ( abs( mask ) < mpi_size )
+	{
+		/* Calculate the rank of the partner process for this iteration */
+		int partner = ( mpi_size + mpi_rank + mask ) % mpi_size;
+
+		printf("rank %i, mask %i, partner %i\n", mpi_rank, mask, partner);
+		/* Exchange sums with paired process */
+		MPI_Request req;
+		MPI_Isend( &partial_sum, 1, MPI_DOUBLE, partner, 0, MPI_COMM_WORLD, &req );
+		MPI_Recv( &recv_sum, 1, MPI_DOUBLE, partner, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE );
+		MPI_Request_free( &req );
+
+		MPI_Barrier( MPI_COMM_WORLD );
+
+		printf("sendrecv success\n");
+		sleep(1);
+
+		MPI_Barrier( MPI_COMM_WORLD );
+
+		/* Update partial sum */
+		partial_sum += recv_sum;
+
+		/* Update mask */
+		mask *= 2;
+	}
+	printf("Finished\n");
+
+	sum = partial_sum;
 #endif
 
 	/* Free memory */
