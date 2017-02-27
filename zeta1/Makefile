@@ -2,15 +2,19 @@ CC=mpicc
 CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra
 LDLIBS=-lm
 
-SRC=main.c zeta.c
+SRC=main.c zeta.c test1.c
 OBJ=$(SRC:.c=.o)
 DEPS=$(OBJ:.o=.d)
 
 TARGET=zeta
+TEST1=test1
 
-all: $(TARGET)
+all: $(TARGET) $(TEST1)
 
-$(TARGET): $(OBJ)
+$(TARGET): main.o zeta.o
+	$(CC) $(LDLIBS) -o $@ $^
+
+$(TEST1): test1.o zeta.o
 	$(CC) $(LDLIBS) -o $@ $^
 
 %.o: %.c
@@ -18,7 +22,10 @@ $(TARGET): $(OBJ)
 
 -include $(DEPS)
 
-.PHONY: clean
+.PHONY: clean vtest
 
 clean:
-	rm -f *.o *.d *.txt $(TARGET)
+	rm -f *.o *.d *.txt $(TARGET) $(TEST1)
+
+vtest: $(TEST1)
+	mpirun ./$<
