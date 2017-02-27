@@ -7,7 +7,7 @@ mach*/mach
 zeta*/test[1-2]
 mach*/test[1-2]
 
-reduc/mach
-reduc/test1
-reduc/mach_rd
-reduc/test1_rd
+reduc_mach/mach
+reduc_mach/test1
+reduc_mach/mach_rd
+reduc_mach/test1_rd
