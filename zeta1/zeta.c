@@ -20,10 +20,10 @@ double zeta_sum( int32_t n )
 
 	/* Allocate space for vector and partition */
 	double* vector = NULL;
-	double* part_vector;
+	double* vector_part;
 	if ( mpi_rank == 0 )
 		vector = (double*)malloc( sizeof(double) * part_size * mpi_size );
-	part_vector = (double*)malloc( sizeof(double) * part_size );
+	vector_part = (double*)malloc( sizeof(double) * part_size );
 
 	/* Generate vector elements on rank 0 */
 	if ( mpi_rank == 0 )
@@ -35,7 +35,7 @@ double zeta_sum( int32_t n )
 	}
 
 	/* Distribute vector elements */
-	MPI_Scatter( vector, part_size, MPI_DOUBLE, part_vector, part_size, MPI_DOUBLE, 0, MPI_COMM_WORLD );
+	MPI_Scatter( vector, part_size, MPI_DOUBLE, vector_part, part_size, MPI_DOUBLE, 0, MPI_COMM_WORLD );
 
 	/* Calculate partial sum */
 	double partial_sum = 0;
@@ -45,7 +45,7 @@ double zeta_sum( int32_t n )
 		if ( !( ( part_size * mpi_rank + i ) < n ) )
 			break;
 
-		partial_sum += part_vector[i];
+		partial_sum += vector_part[i];
 	}
 
 	/* Gather partial sums in rank 0 */
@@ -68,7 +68,7 @@ double zeta_sum( int32_t n )
 		free( vector );
 		free( vector_part_sums );
 	}
-	free( part_vector );
+	free( vector_part );
 
 	return sum;
 }
