@@ -1,5 +1,6 @@
 CC=mpicc
-CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra
+CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra -fopenmp
+LDFLAGS=-fopenmp
 LDLIBS=-lm
 
 SRC=main.c mach.c test1.c
@@ -12,10 +13,10 @@ TEST1=test1
 all: $(TARGET) $(TEST1)
 
 $(TARGET): main.o mach.o
-	$(CC) $(LDLIBS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $^
 
 $(TEST1): test1.o mach.o
-	$(CC) $(LDLIBS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $^
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -MMD -o $@ $<

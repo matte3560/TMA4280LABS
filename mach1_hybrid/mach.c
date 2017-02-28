@@ -28,6 +28,7 @@ double mach_sum( double x, int32_t n )
 	/* Generate vector elements on rank 0 */
 	if ( mpi_rank == 0 )
 	{
+#pragma omp parallel for
 		for ( int32_t i = 0; i < n; i++ )
 		{
 			vector[i] = mach_term( x, i+1 ); // Element 0 holds v_1
@@ -39,11 +40,12 @@ double mach_sum( double x, int32_t n )
 
 	/* Calculate partial sum */
 	double partial_sum = 0;
+#pragma omp parallel for reduction(+:partial_sum)
 	for ( int32_t i = 0; i < part_size; i++ )
 	{
 		/* Make sure last rank doesn't go out of bounds */
 		if ( !( ( part_size * mpi_rank + i ) < n ) )
-			break;
+			continue; // Cant break out of OpenMP loop
 
 		partial_sum += vector_part[i];
 	}
@@ -58,6 +60,7 @@ double mach_sum( double x, int32_t n )
 	double sum = 0;
 	if ( mpi_rank == 0 )
 	{
+#pragma omp parallel for reduction(+:sum)
 		for ( int32_t i = 0; i < mpi_size; i++ )
 			sum += vector_part_sums[i];
 	}
