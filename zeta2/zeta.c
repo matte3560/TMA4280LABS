@@ -12,6 +12,7 @@ double zeta_sum( int32_t n )
 {
 	double sum = 0;
 
+#pragma omp parallel for reduction(+:sum)
 	for ( int32_t i = 1; i <= n; i++ )
 	{
 		sum += zeta_term(i);

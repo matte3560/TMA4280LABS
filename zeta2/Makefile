@@ -1,5 +1,6 @@
 CC=gcc
-CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra
+CFLAGS=-O3 -std=gnu99 -Wall -Wpedantic -Wextra -fopenmp
+LDFLAGS=-fopenmp
 LDLIBS=-lm
 
 SRC=main.c test1.c test2.c zeta.c
@@ -14,13 +15,13 @@ TEST2=test2
 all: $(TARGET) $(TEST1) $(TEST2)
 
 $(TARGET): main.o $(COMMON_OBJ)
-	$(CC) $(LDLIBS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $^
 
 $(TEST1): test1.o $(COMMON_OBJ)
-	$(CC) $(LDLIBS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $^
 
 $(TEST2): test2.o $(COMMON_OBJ)
-	$(CC) $(LDLIBS) -o $@ $^
+	$(CC) $(LDFLAGS) $(LDLIBS) -o $@ $^
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -MMD -o $@ $<
