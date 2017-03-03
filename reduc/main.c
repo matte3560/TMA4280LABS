@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 	MPI_Init( &argc, &argv );
 	MPI_Comm_size( MPI_COMM_WORLD, &mpi_size );
 	MPI_Comm_rank( MPI_COMM_WORLD, &mpi_rank );
-	assert( mpi_size % 2 == 0 ); // Make sure we have a valid number of processes
+	assert( (mpi_size & (mpi_size-1)) == 0 ); // Make sure we have a valid number of processes
 
 	/* Check args */
 	if ( argc != 2 )

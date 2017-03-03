@@ -36,7 +36,7 @@ mach_rd.o: mach.c
 .PHONY: clean vtest vtest_rd
 
 clean:
-	rm -f *.o *.d *.txt $(TARGET) $(TEST1)
+	rm -f *.o *.d *.txt $(TARGET) $(TEST1) $(TARGET_RD) $(TEST1_RD)
 
 vtest: $(TEST1)
 	mpirun ./$<
