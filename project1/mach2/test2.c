@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
-#define _USE_MATH_DEFINES
+#include <omp.h>
 #include <math.h>
 
 #include "mach.h"
@@ -29,10 +28,12 @@ int main(int argc, char** argv)
 		/* Calculate n = 2^k */
 		int32_t n = 2 << (k-1);
 
-		/* Calculate pi and error, output to file */
+		/* Calculate pi, error and runtime, output to file */
+		double t_start = omp_get_wtime();
 		double pi = mach_pi(n);
+		double t_finish = omp_get_wtime();
 		double error = fabs( M_PI - pi );
-		fprintf( fp, "Error (k = %2i, n = %8i): %.20f\n", k, n, error );
+		fprintf( fp, "(k = %2i, n = %8i) Error: %.10f\tTime: %f\n", k, n, error, (t_finish - t_start) );
 	}
 }
 
