@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Change into results/ directory
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+
 # reduc size1
 mpirun -n 2 ../reduc/zeta 8388608
 mv result.txt reduc_n2_s1.txt
