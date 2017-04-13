@@ -49,9 +49,7 @@ int main(int argc, char **argv)
      * Grid points are generated with constant mesh size on both x- and y-axis.
      */
     double *grid = mk_1D_array(n+1, false);
-    for (size_t i = 0; i < n+1; i++) {
-        grid[i] = i * h;
-    }
+	serial_grid(grid, h, n);
 
     /*
      * The diagonal of the eigenvalue matrix of T is set with the eigenvalues
@@ -59,9 +57,7 @@ int main(int argc, char **argv)
      * Note that the indexing starts from zero here, thus i+1.
      */
     double *diag = mk_1D_array(m, false);
-    for (size_t i = 0; i < m; i++) {
-        diag[i] = 2.0 * (1.0 - cos((i+1) * PI / n));
-    }
+	serial_diag(diag, n, m);
 
     /*
      * Allocate the matrices b and bt which will be used for storing value of
@@ -70,6 +66,90 @@ int main(int argc, char **argv)
     double **b = mk_2D_array(m, m, false);
     double **bt = mk_2D_array(m, m, false);
 
+    /*
+     * Initialize the right hand side data for a given rhs function.
+     * Note that the right hand-side is set at nodes corresponding to degrees
+     * of freedom, so it excludes the boundary (bug fixed by petterjf 2017).
+     */
+	serial_gen_rhs(b, grid, h, m);
+
+    /*
+     * Compute \tilde G^T = S^-1 * (S * G)^T (Chapter 9. page 101 step 1)
+     * Instead of using two matrix-matrix products the Discrete Sine Transform
+     * (DST) is used.
+     * The DST code is implemented in FORTRAN in fsf.f and can be called from C.
+     * The array zz is used as storage for DST coefficients and internally for 
+     * FFT coefficients in fst_ and fstinv_.
+     * In functions fst_ and fst_inv_ coefficients are written back to the input 
+     * array (first argument) so that the initial values are overwritten.
+     */
+	serial_dst(b, n, m, false);
+    serial_transpose(bt, b, m);
+	serial_dst(bt, n, m, true);
+
+    /*
+     * Solve Lambda * \tilde U = \tilde G (Chapter 9. page 101 step 2)
+     */
+	serial_solve_tu(bt, diag, m);
+
+    /*
+     * Compute U = S^-1 * (S * Utilde^T) (Chapter 9. page 101 step 3)
+     */
+	serial_dst(bt, n, m, false);
+    serial_transpose(b, bt, m);
+	serial_dst(b, n, m, true);
+
+    /*
+     * Compute maximal value of solution for convergence analysis in L_\infty
+     * norm.
+     */
+    double u_max = serial_u_max(b, m);
+
+    printf("u_max = %e\n", u_max);
+
+    return 0;
+}
+
+/*
+ * Write the transpose of b a matrix of R^(m*m) in bt.
+ * In parallel the function MPI_Alltoallv is used to map directly the entries
+ * stored in the array to the block structure, using displacement arrays.
+ */
+
+void serial_transpose(double **bt, double **b, int m)
+{
+    for (size_t i = 0; i < m; i++) {
+        for (size_t j = 0; j < m; j++) {
+            bt[i][j] = b[j][i];
+        }
+    }
+}
+
+void serial_grid(double *grid, double h, int n)
+{
+    for (size_t i = 0; i < n+1; i++) {
+        grid[i] = i * h;
+    }
+}
+
+void serial_diag(double *diag, int n, int m)
+{
+    for (size_t i = 0; i < m; i++) {
+        diag[i] = 2.0 * (1.0 - cos((i+1) * PI / n));
+    }
+}
+
+void serial_gen_rhs(double **b, double *grid, double h, int m)
+{
+    for (size_t i = 0; i < m; i++) {
+        for (size_t j = 0; j < m; j++) {
+            b[i][j] = h * h * rhs(grid[i+1], grid[j+1]);
+        }
+    }
+}
+
+void serial_dst(double **b, int n, int m, bool inv)
+{
     /*
      * This vector will holds coefficients of the Discrete Sine Transform (DST)
      * but also of the Fast Fourier Transform used in the FORTRAN code.
@@ -83,86 +163,36 @@ int main(int argc, char **argv)
      * The array is allocated once and passed as arguments to avoid doings 
      * reallocations at each function call.
      */
-    int nn = 4 * n;
-    double *z = mk_1D_array(nn, false);
+	int nn = 4*n;
+	double z[nn];
 
-    /*
-     * Initialize the right hand side data for a given rhs function.
-     * Note that the right hand-side is set at nodes corresponding to degrees
-     * of freedom, so it excludes the boundary (bug fixed by petterjf 2017).
-     * 
-     */
-    for (size_t i = 0; i < m; i++) {
-        for (size_t j = 0; j < m; j++) {
-            b[i][j] = h * h * rhs(grid[i+1], grid[j+1]);
-        }
-    }
-
-    /*
-     * Compute \tilde G^T = S^-1 * (S * G)^T (Chapter 9. page 101 step 1)
-     * Instead of using two matrix-matrix products the Discrete Sine Transform
-     * (DST) is used.
-     * The DST code is implemented in FORTRAN in fsf.f and can be called from C.
-     * The array zz is used as storage for DST coefficients and internally for 
-     * FFT coefficients in fst_ and fstinv_.
-     * In functions fst_ and fst_inv_ coefficients are written back to the input 
-     * array (first argument) so that the initial values are overwritten.
-     */
-    for (size_t i = 0; i < m; i++) {
-        fst_(b[i], &n, z, &nn);
-    }
-    serial_transpose(bt, b, m);
-    for (size_t i = 0; i < m; i++) {
-        fstinv_(bt[i], &n, z, &nn);
-    }
-
-    /*
-     * Solve Lambda * \tilde U = \tilde G (Chapter 9. page 101 step 2)
-     */
-    for (size_t i = 0; i < m; i++) {
-        for (size_t j = 0; j < m; j++) {
-            bt[i][j] = bt[i][j] / (diag[i] + diag[j]);
-        }
-    }
-
-    /*
-     * Compute U = S^-1 * (S * Utilde^T) (Chapter 9. page 101 step 3)
-     */
-    for (size_t i = 0; i < m; i++) {
-        fst_(bt[i], &n, z, &nn);
-    }
-    serial_transpose(b, bt, m);
-    for (size_t i = 0; i < m; i++) {
-        fstinv_(b[i], &n, z, &nn);
-    }
-
-    /*
-     * Compute maximal value of solution for convergence analysis in L_\infty
-     * norm.
-     */
-    double u_max = 0.0;
-    for (size_t i = 0; i < m; i++) {
-        for (size_t j = 0; j < m; j++) {
-            u_max = u_max > b[i][j] ? u_max : b[i][j];
-        }
-    }
-
-    printf("u_max = %e\n", u_max);
-
-    return 0;
+	if (inv) {
+		for (size_t i = 0; i < m; i++) {
+			fst_(b[i], &n, z, &nn);
+		}
+	} else {
+		for (size_t i = 0; i < m; i++) {
+			fstinv_(b[i], &n, z, &nn);
+		}
+	}
 }
 
-/*
- * Write the transpose of b a matrix of R^(m*m) in bt.
- * In parallel the function MPI_Alltoallv is used to map directly the entries
- * stored in the array to the block structure, using displacement arrays.
- */
-
-void serial_transpose(double **bt, double **b, size_t m)
+void serial_solve_tu(double **b, double *diag, int m)
 {
     for (size_t i = 0; i < m; i++) {
         for (size_t j = 0; j < m; j++) {
-            bt[i][j] = b[j][i];
+            b[i][j] = b[i][j] / (diag[i] + diag[j]);
         }
     }
+}
+
+double serial_u_max(double **b, m)
+{
+	double u_max = 0.0;
+    for (size_t i = 0; i < m; i++) {
+        for (size_t j = 0; j < m; j++) {
+            u_max = MAX(b[i][j], u_max);
+        }
+    }
+	return u_max;
 }
