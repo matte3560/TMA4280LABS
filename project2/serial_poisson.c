@@ -11,7 +11,6 @@
 
 /* System headers */
 #include <stdlib.h>
-#include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
 
@@ -19,21 +18,8 @@
 #include "common_poisson.h"
 #include "serial_poisson.h"
 
-// Functions implemented in FORTRAN in fst.f and called from C.
-// The trailing underscore comes from a convention for symbol names, called name
-// mangling: if can differ with compilers.
-void fst_(double *v, int *n, double *w, int *nn);
-void fstinv_(double *v, int *n, double *w, int *nn);
-
-int main(int argc, char **argv)
+double serial_poisson(int n)
 {
-    if (argc < 2) {
-        printf("Usage:\n");
-        printf("  poisson n\n\n");
-        printf("Arguments:\n");
-        printf("  n: the problem size (must be a power of 2)\n");
-    }
-
     /*
      *  The equation is solved on a 2D structured grid and homogeneous Dirichlet
      *  conditions are applied on the boundary:
@@ -41,7 +27,6 @@ int main(int argc, char **argv)
      *  - the number of degrees of freedom in each direction is m = n-1,
      *  - the mesh size is constant h = 1/n.
      */
-    int n = atoi(argv[1]);
     int m = n - 1;
     double h = 1.0 / n;
 
@@ -105,9 +90,13 @@ int main(int argc, char **argv)
      */
     double u_max = serial_u_max(b, m);
 
-    printf("u_max = %e\n", u_max);
+	/* Free memory */
+	free diag;
+	free grid;
+	free_2D_array(b);
+	free_2D_array(bt);
 
-    return 0;
+    return u_max;
 }
 
 /*

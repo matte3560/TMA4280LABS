@@ -1,5 +1,7 @@
 #pragma once
 
+double serial_poisson(int n);
+
 void serial_grid(double *grid, double h, int n);
 void serial_diag(double *diag, int n, int m);
 void serial_gen_rhs(double **b, double *grid, double h, int m);

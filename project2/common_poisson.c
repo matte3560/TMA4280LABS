@@ -52,3 +52,10 @@ double **mk_2D_array(size_t n1, size_t n2, bool zero)
     }
     return ret;
 }
+
+void free_2D_array(double **array)
+{
+	/* Free underlying array first */
+	free array[0];
+	free array;
+}
