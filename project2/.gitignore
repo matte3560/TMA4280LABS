@@ -1,3 +1,2 @@
-# Extensions
-*.o
-*.d
+build/*
+!build/Makefile
