@@ -19,6 +19,8 @@ COMMON=common_poisson.o fst.o
 COMMON_TEST=common_test.o
 SERIAL_COMMON=serial_poisson.o $(COMMON)
 
+
+# Targets
 all: serial
 
 utest: serial_utest

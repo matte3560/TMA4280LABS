@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 {
     if (argc < 2) {
         printf("Usage:\n");
-        printf("  poisson n\n\n");
+        printf("  %s n\n\n", argv[0]);
         printf("Arguments:\n");
         printf("  n: the problem size (must be a power of 2)\n");
     }
