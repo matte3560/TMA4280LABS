@@ -1,5 +1,5 @@
+CC=gcc
 FC=gfortran
-FFLAGS=-lm
 CFLAGS=-std=c99 -O3 -MMD
 LDFLAGS=-lm
 
