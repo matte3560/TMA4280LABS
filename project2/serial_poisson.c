@@ -97,7 +97,6 @@ double serial_poisson(int n)
  * In parallel the function MPI_Alltoallv is used to map directly the entries
  * stored in the array to the block structure, using displacement arrays.
  */
-
 void serial_transpose(double **bt, double **b, int m)
 {
 	for (size_t i = 0; i < m; i++) {
