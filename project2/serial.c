@@ -1,4 +1,7 @@
 #include <stdio.h>
+#include <stdlib.h>
+
+#include "serial_poisson.h"
 
 int main(int argc, char **argv)
 {
@@ -12,7 +15,7 @@ int main(int argc, char **argv)
 	/* Get grid size */
     int n = atoi(argv[1]);
 
-	u_max = serial_poisson(n);
+	double u_max = serial_poisson(n);
     printf("u_max = %e\n", u_max);
 
 	return 0;

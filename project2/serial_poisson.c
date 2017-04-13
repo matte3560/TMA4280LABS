@@ -9,13 +9,6 @@
  * Revised by Eivind Fonn, February 2015
  */
 
-/* System headers */
-#include <stdlib.h>
-#include <stdbool.h>
-#include <math.h>
-
-/* Local headers */
-#include "common_poisson.h"
 #include "serial_poisson.h"
 
 double serial_poisson(int n)
@@ -91,8 +84,8 @@ double serial_poisson(int n)
 	double u_max = serial_u_max(b, m);
 
 	/* Free memory */
-	free diag;
-	free grid;
+	free(diag);
+	free(grid);
 	free_2D_array(b);
 	free_2D_array(bt);
 
@@ -132,7 +125,7 @@ void serial_gen_rhs(double **b, double *grid, double h, int m)
 {
 	for (size_t i = 0; i < m; i++) {
 		for (size_t j = 0; j < m; j++) {
-			b[i][j] = h * h * rhs(grid[i+1], grid[j+1]);
+			b[i][j] = h * h * poisson_rhs(grid[i+1], grid[j+1]);
 		}
 	}
 }
@@ -175,7 +168,7 @@ void serial_solve_tu(double **b, double *diag, int m)
 	}
 }
 
-double serial_u_max(double **b, m)
+double serial_u_max(double **b, int m)
 {
 	double u_max = 0.0;
 	for (size_t i = 0; i < m; i++) {

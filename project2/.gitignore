@@ -1,1 +1,6 @@
-build/*
+# Extensions
+*.o
+*.d
+
+# Binaries
+serial
