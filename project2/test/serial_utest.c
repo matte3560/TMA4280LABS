@@ -123,7 +123,7 @@ void test_diag()
 	int n = 4;
 	int m = n-1;
 	double diag[m];
-	serial_diag(diag, n, m);
+	serial_diag(diag, m, n);
 
 	test_print_vec(diag, m);
 
@@ -147,7 +147,7 @@ void test_solve_tu()
 
 	/* Create diagonal */
 	double diag[m];
-	serial_diag(diag, n, m);
+	serial_diag(diag, m, n);
 
 	puts("Before");
 	test_print_mat(mat, m, m);
@@ -213,7 +213,7 @@ void test_dst()
 	puts("Before");
 	test_print_mat(mat, m, n-1);
 
-	serial_dst(mat, n, m, false);
+	serial_dst(mat, m, n, false);
 
 	puts("After");
 	test_print_mat(mat, m, n-1);
@@ -250,7 +250,7 @@ void test_dstinv()
 	puts("Before");
 	test_print_mat(mat, m, n-1);
 
-	serial_dst(mat, n, m, true);
+	serial_dst(mat, m, n, true);
 
 	puts("After");
 	test_print_mat(mat, m, n-1);

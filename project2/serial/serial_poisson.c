@@ -35,7 +35,7 @@ double serial_poisson(int n)
 	 * Note that the indexing starts from zero here, thus i+1.
 	 */
 	double *diag = mk_1D_array(m, false);
-	serial_diag(diag, n, m);
+	serial_diag(diag, m, n);
 
 	/*
 	 * Allocate the matrices b and bt which will be used for storing value of
@@ -61,9 +61,9 @@ double serial_poisson(int n)
 	 * In functions fst_ and fst_inv_ coefficients are written back to the input 
 	 * array (first argument) so that the initial values are overwritten.
 	 */
-	serial_dst(b, n, m, false);
+	serial_dst(b, m, n, false);
 	serial_transpose(bt, b, m);
-	serial_dst(bt, n, m, true);
+	serial_dst(bt, m, n, true);
 
 	/*
 	 * Solve Lambda * \tilde U = \tilde G (Chapter 9. page 101 step 2)
@@ -73,9 +73,9 @@ double serial_poisson(int n)
 	/*
 	 * Compute U = S^-1 * (S * Utilde^T) (Chapter 9. page 101 step 3)
 	 */
-	serial_dst(bt, n, m, false);
+	serial_dst(bt, m, n, false);
 	serial_transpose(b, bt, m);
-	serial_dst(b, n, m, true);
+	serial_dst(b, m, n, true);
 
 	/*
 	 * Compute maximal value of solution for convergence analysis in L_\infty
@@ -113,7 +113,7 @@ void serial_grid(double *grid, double h, int n)
 	}
 }
 
-void serial_diag(double *diag, int n, int m)
+void serial_diag(double *diag, int m, int n)
 {
 	for (size_t i = 0; i < m; i++) {
 		diag[i] = 2.0 * (1.0 - cos((i+1) * PI / n));
@@ -129,7 +129,7 @@ void serial_gen_rhs(double **b, double *grid, double h, int m)
 	}
 }
 
-void serial_dst(double **b, int n, int m, bool inv)
+void serial_dst(double **b, int m, int n, bool inv)
 {
 	/*
 	 * This vector will holds coefficients of the Discrete Sine Transform (DST)
