@@ -12,6 +12,8 @@ void test_grid();
 void test_diag();
 void test_solve_tu();
 void test_gen_rhs();
+void test_dst();
+void test_dstinv();
 
 int main(int argc, char** argv)
 {
@@ -38,6 +40,14 @@ int main(int argc, char** argv)
 	TESTPRINT(Test function used generate the right hand side);
 	test_gen_rhs();
 	TESTPASS();
+
+	TESTPRINT(Test function used for discrete sine transform);
+	test_dst();
+	TESTPASS();
+
+	TESTPRINT(Test function used for inverse discrete sine transform);
+	test_dstinv();
+	TESTPASS();
 }
 
 
@@ -56,9 +66,9 @@ void test_transpose()
 	serial_transpose(mat_t, mat, 3);
 
 	puts("Before");
-	test_print_mat(mat, 3);
+	test_print_mat(mat, 3, 3);
 	puts("After");
-	test_print_mat(mat_t, 3);
+	test_print_mat(mat_t, 3, 3);
 
 	/* Check that the values are correct */
 	for (int i = 0; i < 3; i++) {
@@ -82,7 +92,7 @@ void test_u_max()
 	mat[1][2] = 10;
 	double u_max = serial_u_max(mat, 3);
 
-	test_print_mat(mat, 3);
+	test_print_mat(mat, 3, 3);
 	printf("u_max = %f\n", u_max);
 
 	assert( u_max == 10 );
@@ -140,10 +150,10 @@ void test_solve_tu()
 	serial_diag(diag, n, m);
 
 	puts("Before");
-	test_print_mat(mat, m);
+	test_print_mat(mat, m, m);
 	serial_solve_tu(mat, diag, m);
 	puts("After");
-	test_print_mat(mat, m);
+	test_print_mat(mat, m, m);
 
 	/* Check for correct values */
 	APPROX(mat[0][0], 0);
@@ -168,7 +178,7 @@ void test_gen_rhs()
 	double** mat = mk_2D_array(m, m, false);
 	serial_gen_rhs(mat, vec, h, m);
 
-	test_print_mat(mat, m);
+	test_print_mat(mat, m, m);
 
 	/* Check for correct values */
 	for (int i = 0; i < m; i++) {
@@ -176,4 +186,78 @@ void test_gen_rhs()
 			APPROX(mat[i][j], h * h * poisson_rhs(vec[i+1], vec[j+1]));
 		}
 	}
+}
+
+void test_dst()
+{
+	/* Create 3x5 matrix to test with */
+	int n = 4; // fst_ fortran function uses n-1
+	int m = n-1;
+	double r1[3] = { 1, 0, 1};
+	double r2[3] = { 0, 2, 1};
+	double r3[3] = {.5, 0, 0};
+	double* mat[3] = {r1, r2, r3};
+	double** mat_copy = dup_2D_array(mat, 3, 3);
+	assert( mat_copy[0] != mat[0] );
+
+	/*
+	 * Perform transformation on copied matrix using code copied directly from provided sample code.
+	 * This code is assumed to be correct.
+	 */
+	int nn = 4*n;
+	double z[nn];
+    for (size_t i = 0; i < m; i++) {
+        fst_(mat_copy[i], &n, z, &nn);
+    }
+
+	puts("Before");
+	test_print_mat(mat, m, n-1);
+
+	serial_dst(mat, n, m, false);
+
+	puts("After");
+	test_print_mat(mat, m, n-1);
+
+	/* Check if values are correct */
+	test_cmp_mat(mat, mat_copy, m, n-1);
+
+	/* Free memory */
+	free_2D_array(mat_copy);
+}
+
+void test_dstinv()
+{
+	/* Create 3x5 matrix to test with */
+	int n = 4; // fst_ fortran function uses n-1
+	int m = n-1;
+	double r1[3] = { 1, 0, 1};
+	double r2[3] = { 0, 2, 1};
+	double r3[3] = {.5, 0, 0};
+	double* mat[3] = {r1, r2, r3};
+	double** mat_copy = dup_2D_array(mat, 3, 3);
+	assert( mat_copy[0] != mat[0] );
+
+	/*
+	 * Perform transformation on copied matrix using code copied directly from provided sample code.
+	 * This code is assumed to be correct.
+	 */
+	int nn = 4*n;
+	double z[nn];
+    for (size_t i = 0; i < m; i++) {
+        fstinv_(mat_copy[i], &n, z, &nn);
+    }
+
+	puts("Before");
+	test_print_mat(mat, m, n-1);
+
+	serial_dst(mat, n, m, true);
+
+	puts("After");
+	test_print_mat(mat, m, n-1);
+
+	/* Check if values are correct */
+	test_cmp_mat(mat, mat_copy, m, n-1);
+
+	/* Free memory */
+	free_2D_array(mat_copy);
 }

@@ -1,5 +1,7 @@
 #include "common_poisson.h"
 
+#include <string.h> // memcpy???
+
 
 /*
  * This function is used for initializing the right-hand side of the equation.
@@ -50,6 +52,24 @@ double **mk_2D_array(size_t n1, size_t n2, bool zero)
     for (size_t i = 1; i < n1; i++) {
         ret[i] = ret[i-1] + n2;
     }
+    return ret;
+}
+
+double **dup_2D_array(double **array, size_t n1, size_t n2)
+{
+	/* Create new array to copy into */
+    double **ret = (double **)malloc(n1 * sizeof(double *));
+	ret[0] = (double *)malloc(n1 * n2 * sizeof(double));
+    for (size_t i = 1; i < n1; i++) {
+        ret[i] = ret[i-1] + n2;
+    }
+
+	/* Copy contents of provided array row by row */
+	for (size_t i = 0; i < n2; i++)
+	{
+		memcpy(ret[i], array[i], n2 * sizeof(double));
+	}
+
     return ret;
 }
 

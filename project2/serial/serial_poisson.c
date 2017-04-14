@@ -149,11 +149,11 @@ void serial_dst(double **b, int n, int m, bool inv)
 
 	if (inv) {
 		for (size_t i = 0; i < m; i++) {
-			fst_(b[i], &n, z, &nn);
+			fstinv_(b[i], &n, z, &nn);
 		}
 	} else {
 		for (size_t i = 0; i < m; i++) {
-			fstinv_(b[i], &n, z, &nn);
+			fst_(b[i], &n, z, &nn);
 		}
 	}
 }
