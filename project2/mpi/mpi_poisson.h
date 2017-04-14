@@ -1,0 +1,24 @@
+#pragma once
+
+#include "common_poisson.h"
+
+#include <mpi.h>
+
+
+double mpi_poisson(int n);
+
+/* Commented out -> not implemented yet */
+int mpi_init(int *argc, char ***argv);
+int mpi_finalize();
+//void mpi_grid(double *grid, double h, int n);
+//void mpi_diag(double *diag, int m, int n);
+//void mpi_gen_rhs(double **b, double *grid, double h, int m);
+//void mpi_transpose(double **bt, double **b, int m);
+//void mpi_dst(double **b, int m, int n, bool inv);
+//void mpi_solve_tu(double **b, double *diag, int m);
+//double mpi_u_max(double **b, int m);
+
+/* MPI related vars */
+static MPI_Comm mpi_comm;
+static int mpi_rank;
+static int mpi_size;
