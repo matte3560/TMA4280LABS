@@ -15,7 +15,8 @@
 extern void fst_(double *v, int *n, double *w, int *nn);
 extern void fstinv_(double *v, int *n, double *w, int *nn);
 
-double poisson_rhs(double x, double y);
+extern double poisson_rhs(double x, double y);
+
 double *mk_1D_array(size_t n, bool zero);
 double **mk_2D_array(size_t n1, size_t n2, bool zero);
 double **dup_2D_array(double **array, size_t n1, size_t n2);
