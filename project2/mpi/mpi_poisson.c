@@ -43,8 +43,8 @@ double mpi_poisson(int n)
 	 * Allocate the matrices b and bt which will be used for storing value of
 	 * G, \tilde G^T, \tilde U^T, U as described in Chapter 9. page 101.
 	 */
-	double **b = mk_2D_array(m, m, false);
-	double **bt = mk_2D_array(m, m, false);
+	double **b = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
+	double **bt = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
 
 	/*
 	 * Initialize the right hand side data for a given rhs function.
@@ -63,9 +63,9 @@ double mpi_poisson(int n)
 	 * In functions fst_ and fst_inv_ coefficients are written back to the input 
 	 * array (first argument) so that the initial values are overwritten.
 	 */
-	serial_dst(b, m, n, false);
+	mpi_dst(b, m, n, false);
 	serial_transpose(bt, b, m);
-	serial_dst(bt, m, n, true);
+	mpi_dst(bt, m, n, true);
 
 	/*
 	 * Solve Lambda * \tilde U = \tilde G (Chapter 9. page 101 step 2)
@@ -75,9 +75,9 @@ double mpi_poisson(int n)
 	/*
 	 * Compute U = S^-1 * (S * Utilde^T) (Chapter 9. page 101 step 3)
 	 */
-	serial_dst(bt, m, n, false);
+	mpi_dst(bt, m, n, false);
 	serial_transpose(b, bt, m);
-	serial_dst(b, m, n, true);
+	mpi_dst(b, m, n, true);
 
 	/*
 	 * Compute maximal value of solution for convergence analysis in L_\infty
