@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     int n = atoi(argv[1]);
 
 	double u_max = mpi_poisson(n);
-	if ( mpi_rank == 0) {
+	if (mpi_rank == 0) {
 		printf("u_max = %e\n", u_max);
 	}
 
