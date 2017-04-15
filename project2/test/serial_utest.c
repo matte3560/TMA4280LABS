@@ -48,6 +48,8 @@ int main(int argc, char** argv)
 	TESTPRINT(Test function used for inverse discrete sine transform);
 	test_dstinv();
 	TESTPASS();
+
+	return 0;
 }
 
 

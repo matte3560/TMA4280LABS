@@ -5,6 +5,11 @@
 #include <mpi.h>
 
 
+/* MPI related globals */
+MPI_Comm mpi_comm;
+int mpi_rank;
+int mpi_size;
+
 double mpi_poisson(int n);
 
 /* Commented out -> not implemented yet */
@@ -18,7 +23,9 @@ int mpi_finalize();
 //void mpi_solve_tu(double **b, double *diag, int m);
 //double mpi_u_max(double **b, int m);
 
-/* MPI related vars */
-static MPI_Comm mpi_comm;
-static int mpi_rank;
-static int mpi_size;
+/* Array related functions */
+size_t mpi_idx_start(const size_t size);
+size_t mpi_idx_end(const size_t size);
+size_t mpi_idx_size(const size_t size);
+size_t mpi_idx_part(const size_t size);
+size_t mpi_padded_size(const size_t size);

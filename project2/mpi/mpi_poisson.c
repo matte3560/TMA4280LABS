@@ -12,6 +12,7 @@
 #include "mpi_poisson.h"
 #include "serial_poisson.h" // For functions not yet implemented with MPI
 
+
 double mpi_poisson(int n)
 {
 	/*
@@ -145,34 +146,44 @@ int mpi_finalize()
 //	}
 //}
 
-//void mpi_dst(double **b, int m, int n, bool inv)
-//{
-//	/*
-//	 * This vector will holds coefficients of the Discrete Sine Transform (DST)
-//	 * but also of the Fast Fourier Transform used in the FORTRAN code.
-//	 * The storage size is set to nn = 4 * n, look at Chapter 9. pages 98-100:
-//	 * - Fourier coefficients are complex so storage is used for the real part
-//	 *   and the imaginary part.
-//	 * - Fourier coefficients are defined for j = [[ - (n-1), + (n-1) ]] while 
-//	 *   DST coefficients are defined for j [[ 0, n-1 ]].
-//	 * As explained in the Lecture notes coefficients for positive j are stored
-//	 * first.
-//	 * The array is allocated once and passed as arguments to avoid doings 
-//	 * reallocations at each function call.
-//	 */
-//	int nn = 4*n;
-//	double z[nn];
-//
-//	if (inv) {
-//		for (size_t i = 0; i < m; i++) {
-//			fstinv_(b[i], &n, z, &nn);
-//		}
-//	} else {
-//		for (size_t i = 0; i < m; i++) {
-//			fst_(b[i], &n, z, &nn);
-//		}
-//	}
-//}
+void mpi_dst(double **b, int m, int n, bool inv)
+{
+	/*
+	 * This vector will holds coefficients of the Discrete Sine Transform (DST)
+	 * but also of the Fast Fourier Transform used in the FORTRAN code.
+	 * The storage size is set to nn = 4 * n, look at Chapter 9. pages 98-100:
+	 * - Fourier coefficients are complex so storage is used for the real part
+	 *   and the imaginary part.
+	 * - Fourier coefficients are defined for j = [[ - (n-1), + (n-1) ]] while 
+	 *   DST coefficients are defined for j [[ 0, n-1 ]].
+	 * As explained in the Lecture notes coefficients for positive j are stored
+	 * first.
+	 * The array is allocated once and passed as arguments to avoid doings 
+	 * reallocations at each function call.
+	 */
+	int nn = 4*n;
+	double z[nn];
+
+	/* Local bounds */
+	size_t lstart = mpi_idx_start(m);
+	size_t lend = mpi_idx_end(m);
+	size_t part = mpi_idx_part(m);
+
+	if (inv) {
+		for (size_t i = lstart; i < lend; i++) {
+			fstinv_(b[i], &n, z, &nn);
+		}
+	} else {
+		for (size_t i = lstart; i < lend; i++) {
+			fst_(b[i], &n, z, &nn);
+		}
+	}
+
+	/* Distribute results to all processes */
+	MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+			b[0], part * mpi_padded_size(m), MPI_DOUBLE,
+			mpi_comm);
+}
 
 //void mpi_solve_tu(double **b, double *diag, int m)
 //{
@@ -193,3 +204,63 @@ int mpi_finalize()
 //	}
 //	return u_max;
 //}
+
+size_t mpi_idx_start(const size_t size)
+{
+	/* Calculate size of partiton */
+	size_t part = size / mpi_size;
+
+	if (size % mpi_size != 0) {
+		/* Size can not be evenly divided across processes */
+		part++;
+	}
+
+	return part * mpi_rank;
+}
+
+size_t mpi_idx_end(const size_t size)
+{
+	/* Calculate size of partiton */
+	size_t part = size / mpi_size;
+	size_t end;
+
+	if (size % mpi_size == 0) {
+		end = part * (mpi_rank + 1);
+	} else {
+		/* Size can not be evenly divided across processes */
+		part++;
+		end = MIN(part * (mpi_rank + 1), size); // Dont go out of bounds on the highest rank process
+	}
+
+	return end;
+}
+
+size_t mpi_idx_size(const size_t size)
+{
+	size_t local_size;
+	size_t start = mpi_idx_start(size);
+	size_t end = mpi_idx_end(size);
+
+	/* Handle edge case for small array size and large number of processes */
+	if ( start > end ) {
+		local_size = 0;
+	} else {
+		local_size = end - start;
+	}
+
+	return local_size;
+}
+
+size_t mpi_idx_part(const size_t size)
+{
+	size_t part = size / mpi_size;
+	if ( size % mpi_size != 0 )
+		part++;
+
+	return part;
+}
+
+size_t mpi_padded_size(const size_t size)
+{
+	return mpi_idx_part(size) * mpi_size;
+}

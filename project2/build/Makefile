@@ -19,6 +19,7 @@ FFLAGS+=$(INCLUDE)
 # Object files
 COMMON=common_poisson.o fst.o
 COMMON_TEST=common_test.o
+COMMON_MPI_TEST=$(COMMON_TEST)
 SERIAL_COMMON=serial_poisson.o $(COMMON)
 MPI_COMMON=mpi_poisson.o serial_poisson.o $(COMMON) # serial_poisson.o needed for functions w/o MPI implementation
 
@@ -35,13 +36,16 @@ hybrid_%.o: CFLAGS+=-fopenmp
 # Targets
 all: serial mpi
 
-utest: serial_utest
+utest: serial_utest mpi_idx_utest
 
 serial: serial.o $(SERIAL_COMMON) $(RHS_CONST)
 
 serial_utest: serial_utest.o $(SERIAL_COMMON) $(COMMON_TEST) $(RHS_CONST)
 
 mpi: mpi.o $(MPI_COMMON) $(RHS_CONST)
+	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+mpi_idx_utest: mpi_idx_utest.o $(MPI_COMMON) $(COMMON_MPI_TEST) $(RHS_CONST)
 	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 
@@ -55,4 +59,4 @@ clean:
 
 purge: clean
 	$(RM) serial serial_utest
-	$(RM) mpi
+	$(RM) mpi mpi_idx_utest
