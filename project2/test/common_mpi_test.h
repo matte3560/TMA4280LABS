@@ -11,6 +11,7 @@
 #define MPI_SYNC(code) \
 	do{ \
 		MPI_Barrier(mpi_comm); \
+		sleep(1); \
 		do{ code }while(false); \
 		sleep(1); \
 		MPI_Barrier(mpi_comm); \
