@@ -13,8 +13,12 @@
 
 #include <stdio.h>
 
-double mpi_poisson(int n)
+poisson_result_t mpi_poisson(int n)
 {
+	/* Get start time */
+	MPI_Barrier(mpi_comm);
+	double time_start = MPI_Wtime();
+
 	/*
 	 *  The equation is solved on a 2D structured grid and homogeneous Dirichlet
 	 *  conditions are applied on the boundary:
@@ -79,19 +83,28 @@ double mpi_poisson(int n)
 	mpi_transpose(b, bt, m);
 	mpi_dst(b, m, n, true);
 
-	/*
-	 * Compute maximal value of solution for convergence analysis in L_\infty
-	 * norm.
-	 */
-	double u_max = mpi_u_max(b, m);
+	/* Gather final result */
+	double** u = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
+	mpi_allgather_mat(u, b, m, m);
 
 	/* Free memory */
 	free(diag);
-	free(grid);
 	free_2D_array(b);
 	free_2D_array(bt);
 
-	return u_max;
+	/* Calculate finish time */
+	MPI_Barrier(mpi_comm);
+	double time_finish = MPI_Wtime();
+
+	/* Put result in struct */
+	poisson_result_t result = {
+		.time = time_finish - time_start,
+		.n = n,
+		.grid = grid,
+		.u = u
+	};
+
+	return result;
 }
 
 int mpi_init(int *argc, char ***argv)

@@ -14,7 +14,6 @@ void test_grid(int n);
 void test_gen_rhs(int n);
 void test_solve_tu(int n);
 void test_u_max(int n);
-void test_complete(int n);
 
 int main(int argc, char** argv)
 {
@@ -68,14 +67,6 @@ int main(int argc, char** argv)
 
 	MPI_TESTPRINT(Testing u_max with large size);
 	test_u_max(512);
-	MPI_TESTPASS();
-
-	MPI_TESTPRINT(Testing complete solution with small size);
-	test_complete(8);
-	MPI_TESTPASS();
-
-	MPI_TESTPRINT(Testing complete solution with large size);
-	test_complete(512);
 	MPI_TESTPASS();
 
 	return mpi_finalize();
@@ -371,20 +362,4 @@ void test_u_max(int n)
 	/* Free memory */
 	free_2D_array(mat);
 	free_2D_array(lmat);
-}
-
-void test_complete(int n)
-{
-	MPI_RANK0( printf("Using n = %i\n", n); );
-
-	/* Get correct solution */
-	double c_u_max = serial_poisson(n);
-
-	/* Get MPI solution */
-	double u_max = mpi_poisson(n);
-
-	MPI_RANK0( printf("Result = %f\n", u_max); );
-
-	/* Check if correct */
-	APPROX(u_max, c_u_max);
 }

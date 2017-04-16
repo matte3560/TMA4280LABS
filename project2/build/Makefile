@@ -39,7 +39,7 @@ all: serial mpi
 
 utest: serial_utest mpi_idx_utest mpi_utest
 
-vtest: serial_vtest
+vtest: serial_vtest mpi_vtest
 
 serial: serial.o $(SERIAL_COMMON) $(RHS_CONST)
 
@@ -54,6 +54,9 @@ mpi_utest: mpi_utest.o $(MPI_COMMON) $(COMMON_MPI_TEST) $(RHS_CONST)
 	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 mpi_idx_utest: mpi_idx_utest.o $(MPI_COMMON) $(COMMON_MPI_TEST) $(RHS_CONST)
+	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+mpi_vtest: mpi_vtest.o $(MPI_COMMON) $(COMMON_MPI_TEST) $(RHS_VTEST)
 	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 
@@ -77,10 +80,12 @@ run_utest: utest
 run_vtest: vtest
 	# Serial implementation
 	./serial_vtest
+	# MPI implementation
+	mpirun -n 4 mpi_vtest
 
 clean:
 	$(RM) *.o *.d
 
 purge: clean
-	$(RM) serial serial_utest serial_vtest
-	$(RM) mpi mpi_idx_utest mpi_utest
+	$(RM) serial mpi
+	$(RM) *_utest *_vtest

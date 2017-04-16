@@ -10,7 +10,7 @@ MPI_Comm mpi_comm;
 int mpi_rank;
 int mpi_size;
 
-double mpi_poisson(int n);
+poisson_result_t mpi_poisson(int n);
 
 /* Commented out -> not implemented yet */
 int mpi_init(int *argc, char ***argv);

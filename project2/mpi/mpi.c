@@ -18,10 +18,11 @@ int main(int argc, char **argv)
 	/* Get grid size */
     int n = atoi(argv[1]);
 
-	double u_max = mpi_poisson(n);
+	poisson_result_t result = mpi_poisson(n);
 	if (mpi_rank == 0) {
-		printf("u_max = %e\n", u_max);
+		printf("(P = %2i, n = %5i) Time: = %f\n", mpi_size, n, result.time);
 	}
+	finalize_result(&result);
 
 	return mpi_finalize();
 }
