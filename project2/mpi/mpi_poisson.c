@@ -43,8 +43,8 @@ double mpi_poisson(int n)
 	 * Allocate the matrices b and bt which will be used for storing value of
 	 * G, \tilde G^T, \tilde U^T, U as described in Chapter 9. page 101.
 	 */
-	double **b = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
-	double **bt = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
+	double **b = mk_2D_array(mpi_idx_part(m), mpi_padded_size(m), false);
+	double **bt = mk_2D_array(mpi_idx_part(m), mpi_padded_size(m), false);
 
 	/*
 	 * Initialize the right hand side data for a given rhs function.
@@ -121,27 +121,28 @@ void mpi_transpose(double **bt, double **b, int m)
 	size_t part = mpi_idx_part(m);
 	size_t padded_size = mpi_padded_size(m);
 
-	/* Create rows datatype */
-	MPI_Datatype rows;
-	MPI_Type_vector(part, padded_size, padded_size, MPI_DOUBLE, &rows);
-	MPI_Type_commit(&rows);
+	/* Create block datatype */
+	MPI_Datatype block;
+	MPI_Type_vector(part, part, padded_size, MPI_DOUBLE, &block);
+	MPI_Type_create_resized(block, 0, part*sizeof(double), &block);
+	MPI_Type_commit(&block);
 
-	/* Create cols datatype */
-	MPI_Datatype cols;
-	MPI_Type_vector(padded_size, 1, padded_size, MPI_DOUBLE, &cols);
-	MPI_Type_create_hvector(part, 1, sizeof(double), cols, &cols);
-	MPI_Type_create_resized(cols, 0, part*sizeof(double), &cols);
-	MPI_Type_commit(&cols);
+	/* Create transposed block datatype */
+	MPI_Datatype transp_block;
+	MPI_Type_vector(part, 1, padded_size, MPI_DOUBLE, &transp_block);
+	MPI_Type_create_hvector(part, 1, sizeof(double), transp_block, &transp_block);
+	MPI_Type_create_resized(transp_block, 0, part*sizeof(double), &transp_block);
+	MPI_Type_commit(&transp_block);
 
 	/* Perform transpose */
-	MPI_Allgather(
-			b[0] + start * padded_size, 1, rows,
-			bt[0], 1, cols,
+	MPI_Alltoall(
+			b[0], 1, block,
+			bt[0], 1, transp_block,
 			mpi_comm);
 
 	/* Free datatypes */
-	MPI_Type_free(&rows);
-	MPI_Type_free(&cols);
+	MPI_Type_free(&block);
+	MPI_Type_free(&transp_block);
 }
 
 void mpi_grid(double *grid, double h, int n)
@@ -149,7 +150,10 @@ void mpi_grid(double *grid, double h, int n)
 	for (size_t i = mpi_idx_start(n+1); i < mpi_idx_end(n+1); i++) {
 		grid[i] = i * h;
 	}
-	mpi_allgather_vec(grid, n+1);
+	MPI_Allgather(
+			MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+			grid, mpi_idx_part(n+1), MPI_DOUBLE,
+			mpi_comm);
 }
 
 void mpi_diag(double *diag, int m, int n)
@@ -157,14 +161,21 @@ void mpi_diag(double *diag, int m, int n)
 	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
 		diag[i] = 2.0 * (1.0 - cos((i+1) * PI / n));
 	}
-	mpi_allgather_vec(diag, m);
+	MPI_Allgather(
+			MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+			diag, mpi_idx_part(m), MPI_DOUBLE,
+			mpi_comm);
 }
 
 void mpi_gen_rhs(double **b, double *grid, double h, int m)
 {
-	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
+	/* Indexing */
+	size_t start = mpi_idx_start(m);
+	size_t end = mpi_idx_end(m);
+
+	for (size_t i = start; i < end; i++) {
 		for (size_t j = 0; j < m; j++) {
-			b[i][j] = h * h * poisson_rhs(grid[i+1], grid[j+1]);
+			b[i-start][j] = h * h * poisson_rhs(grid[i+1], grid[j+1]);
 		}
 	}
 }
@@ -188,16 +199,14 @@ void mpi_dst(double **b, int m, int n, bool inv)
 	double z[nn];
 
 	/* Local bounds */
-	size_t lstart = mpi_idx_start(m);
-	size_t lend = mpi_idx_end(m);
-	size_t part = mpi_idx_part(m);
+	size_t size = mpi_idx_size(m);
 
 	if (inv) {
-		for (size_t i = lstart; i < lend; i++) {
+		for (size_t i = 0; i < size; i++) {
 			fstinv_(b[i], &n, z, &nn);
 		}
 	} else {
-		for (size_t i = lstart; i < lend; i++) {
+		for (size_t i = 0; i < size; i++) {
 			fst_(b[i], &n, z, &nn);
 		}
 	}
@@ -205,18 +214,25 @@ void mpi_dst(double **b, int m, int n, bool inv)
 
 void mpi_solve_tu(double **b, double *diag, int m)
 {
-	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
+	/* Indexing */
+	size_t start = mpi_idx_start(m);
+	size_t end = mpi_idx_end(m);
+
+	for (size_t i = start; i < end; i++) {
 		for (size_t j = 0; j < m; j++) {
-			b[i][j] = b[i][j] / (diag[i] + diag[j]);
+			b[i-start][j] = b[i-start][j] / (diag[i] + diag[j]);
 		}
 	}
 }
 
 double mpi_u_max(double **b, int m)
 {
+	/* Local bounds */
+	size_t size = mpi_idx_size(m);
+
 	/* Calculate local umax */
 	double u_max = 0.0;
-	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
+	for (size_t i = 0; i < size; i++) {
 		for (size_t j = 0; j < m; j++) {
 			u_max = MAX(b[i][j], u_max);
 		}
@@ -289,18 +305,27 @@ size_t mpi_padded_size(const size_t size)
 	return mpi_idx_part(size) * mpi_size;
 }
 
-void mpi_allgather_mat(double** mat, int m, int n)
+void mpi_allgather_mat(double** gmat, double** lmat, int m, int n)
 {
+	/* Indexing */
+	size_t part = mpi_idx_part(m);
+	size_t padded_size = mpi_padded_size(n);
+
 	/* Distribute to all processes */
-	MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-			mat[0], mpi_idx_part(m) * mpi_padded_size(n), MPI_DOUBLE,
+	MPI_Allgather(
+			lmat[0], part * padded_size, MPI_DOUBLE,
+			gmat[0], part * padded_size, MPI_DOUBLE,
 			mpi_comm);
 }
 
-void mpi_allgather_vec(double* vec, int size)
+void mpi_allgather_vec(double* gvec, double* lvec, int size)
 {
+	/* Indexing */
+	size_t part = mpi_idx_part(size);
+
 	/* Distribute to all processes */
-	MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-			vec, mpi_idx_part(size), MPI_DOUBLE,
+	MPI_Allgather(
+			lvec, part, MPI_DOUBLE,
+			gvec, part, MPI_DOUBLE,
 			mpi_comm);
 }

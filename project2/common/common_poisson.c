@@ -51,7 +51,7 @@ double **dup_2D_array(double **array, size_t n1, size_t n2)
     }
 
 	/* Copy contents of provided array row by row */
-	for (size_t i = 0; i < n2; i++)
+	for (size_t i = 0; i < n1; i++)
 	{
 		memcpy(ret[i], array[i], n2 * sizeof(double));
 	}

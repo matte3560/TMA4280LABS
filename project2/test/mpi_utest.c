@@ -12,6 +12,9 @@ void test_transpose(int n);
 void test_diag(int n);
 void test_grid(int n);
 void test_gen_rhs(int n);
+void test_solve_tu(int n);
+void test_u_max(int n);
+void test_complete(int n);
 
 int main(int argc, char** argv)
 {
@@ -51,6 +54,30 @@ int main(int argc, char** argv)
 	test_gen_rhs(512);
 	MPI_TESTPASS();
 
+	MPI_TESTPRINT(Testing solve_tu with small size);
+	test_solve_tu(8);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing solve_tu with large size);
+	test_solve_tu(512);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing u_max with small size);
+	test_u_max(8);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing u_max with large size);
+	test_u_max(512);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing complete solution with small size);
+	test_complete(8);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing complete solution with large size);
+	test_complete(512);
+	MPI_TESTPASS();
+
 	return mpi_finalize();
 }
 
@@ -85,8 +112,9 @@ void test_dst(int n)
 	serial_dst(c_mat, m, n, false);
 
 	/* Apply parallel version and compare results */
-	mpi_dst(mat, m, n, false);
-	mpi_allgather_mat(mat, m, m);
+	double** lmat = dup_2D_array(mat + mpi_idx_start(m), mpi_idx_part(m), mpi_padded_size(m));
+	mpi_dst(lmat, m, n, false);
+	mpi_allgather_mat(mat, lmat, m, m);
 
 	MPI_RANK0(
 		if (n<=8) {
@@ -99,8 +127,8 @@ void test_dst(int n)
 
 	/* Also test inverse DST */
 	serial_dst(c_mat, m, n, true);
-	mpi_dst(mat, m, n, true);
-	mpi_allgather_mat(mat, m, m);
+	mpi_dst(lmat, m, n, true);
+	mpi_allgather_mat(mat, lmat, m, m);
 
 	MPI_RANK0(
 		if (n<=8) {
@@ -119,6 +147,7 @@ void test_dst(int n)
 void test_transpose(int n)
 {
 	/* Indexing */
+	size_t part = mpi_idx_part(n);
 	size_t padded_size = mpi_padded_size(n);
 
 	/* Create matrix to transpose */
@@ -148,21 +177,24 @@ void test_transpose(int n)
 	serial_transpose(c_tmat, mat, n);
 
 	/* Transpose with MPI implementation and compare result */
-	double** tmat = mk_2D_array(padded_size, padded_size, false);
-	mpi_transpose(tmat, mat, n);
+	double** lmat = dup_2D_array(mat + mpi_idx_start(n), part, padded_size);
+	double** tlmat = mk_2D_array(part, padded_size, false);
+	mpi_transpose(tlmat, lmat, n);
+	mpi_allgather_mat(mat, tlmat, n, n);
 
 	MPI_RANK0(
 		if (n<=8) {
 			puts("After");
-			test_print_mat(tmat, n, n);
+			test_print_mat(mat, n, n);
 		}
 	);
 
-	test_cmp_mat(tmat, c_tmat, n, n);
+	test_cmp_mat(mat, c_tmat, n, n);
 
 	/* Free memory */
 	free_2D_array(mat);
-	free_2D_array(tmat);
+	free_2D_array(lmat);
+	free_2D_array(tlmat);
 	free_2D_array(c_tmat);
 }
 
@@ -219,13 +251,15 @@ void test_gen_rhs(int n)
 
 	/* Allocate arrays */
 	size_t padded_size = mpi_padded_size(m);
+	size_t part = mpi_idx_part(m);
+	double** lmat = mk_2D_array(part, padded_size, false);
 	double** mat = mk_2D_array(padded_size, padded_size, false);
 	double** c_mat = mk_2D_array(m, m, false);
 
 	/* Generate rhs with serial and MPI func */
 	serial_gen_rhs(c_mat, grid, h, m);
-	mpi_gen_rhs(mat, grid, h, m);
-	mpi_allgather_mat(mat, m, m);
+	mpi_gen_rhs(lmat, grid, h, m);
+	mpi_allgather_mat(mat, lmat, m, m);
 
 	MPI_RANK0(
 		if (n<=8) {
@@ -241,5 +275,116 @@ void test_gen_rhs(int n)
 
 	/* Free mem */
 	free_2D_array(mat);
+	free_2D_array(lmat);
 	free_2D_array(c_mat);
+}
+
+void test_solve_tu(int n)
+{
+	int m = n-1;
+
+	MPI_RANK0( printf("Using n = %i, m = %i\n", n, m); );
+
+	/* Generate diagonal and matrix */
+	double diag[m];
+	serial_diag(diag, m, n);
+	double** mat = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
+	for (int i = 0; i < m; i++) {
+		for (int j = 0; j < m; j++) {
+			mat[i][j] = j;
+		}
+	}
+
+	MPI_RANK0(
+		if (n<=8) {
+			puts("Before");
+			test_print_mat(mat, m, m);
+		} else {
+			puts("Too large to print...");
+		}
+	);
+
+	/* Get correct result from serial implementation */
+	double** c_mat = dup_2D_array(mat, m, m);
+	serial_solve_tu(c_mat, diag, m);
+
+	/* Get solution with MPI implementation */
+	double** lmat = dup_2D_array(mat + mpi_idx_start(m), mpi_idx_part(m), mpi_padded_size(m));
+	mpi_solve_tu(lmat, diag, m);
+	mpi_allgather_mat(mat, lmat, m, m);
+
+	MPI_RANK0(
+		if (n<=8) {
+			puts("After");
+			test_print_mat(mat, m, m);
+		}
+	);
+
+	/* Check if result is correct */
+	test_cmp_mat(c_mat, mat, m, m);
+
+	/* Free mem */
+	free_2D_array(mat);
+	free_2D_array(lmat);
+	free_2D_array(c_mat);
+}
+
+void test_u_max(int n)
+{
+	int m = n-1;
+
+	MPI_RANK0( printf("Using n = %i, m = %i\n", n, m); );
+
+	/* Generate matrix */
+	double** mat = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
+	for (int i = 0; i < m; i++) {
+		for (int j = 0; j < m; j++) {
+			mat[i][j] = m*m - i*m + j;
+		}
+	}
+
+	MPI_RANK0(
+		if (n<=8) {
+			puts("Before");
+			test_print_mat(mat, m, m);
+		} else {
+			puts("Too large to print...");
+		}
+	);
+
+	/* Get correct solution */
+	double c_u_max = serial_u_max(mat, m);
+
+	/* Get MPI solution */
+	double** lmat = dup_2D_array(mat + mpi_idx_start(m), mpi_idx_part(m), mpi_padded_size(m));
+	double u_max = mpi_u_max(lmat, m);
+
+	MPI_RANK0(
+		if (n<=8) {
+			printf("Result = %f\n", u_max);
+		}
+	);
+
+	/* Check if correct */
+	APPROX(u_max, c_u_max);
+
+	/* Free memory */
+	free_2D_array(mat);
+	free_2D_array(lmat);
+}
+
+void test_complete(int n)
+{
+	MPI_RANK0( printf("Using n = %i\n", n); );
+
+	/* Get correct solution */
+	double c_u_max = serial_poisson(n);
+
+	/* Get MPI solution */
+	double u_max = mpi_poisson(n);
+
+	MPI_RANK0( printf("Result = %f\n", u_max); );
+
+	/* Check if correct */
+	APPROX(u_max, c_u_max);
 }
