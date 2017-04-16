@@ -65,3 +65,9 @@ void free_2D_array(double **array)
 	free(array[0]);
 	free(array);
 }
+
+void finalize_result(poisson_result_t* result)
+{
+	free( result->grid );
+	free_2D_array( result->u );
+}

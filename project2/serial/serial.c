@@ -15,8 +15,8 @@ int main(int argc, char **argv)
 	/* Get grid size */
     int n = atoi(argv[1]);
 
-	double u_max = serial_poisson(n);
-    printf("u_max = %e\n", u_max);
+	poisson_result_t result = serial_poisson(n);
+	printf("(n = %i) Time: %f\n", n, result.time);
 
 	return 0;
 }

@@ -11,8 +11,15 @@
 
 #include "serial_poisson.h"
 
-double serial_poisson(int n)
+#include <sys/time.h>
+
+poisson_result_t serial_poisson(int n)
 {
+	/* Get start time */
+	struct timeval tm;
+	gettimeofday(&tm, NULL);
+	double time_start = tm.tv_sec + tm.tv_usec / 1000000.0;
+
 	/*
 	 *  The equation is solved on a 2D structured grid and homogeneous Dirichlet
 	 *  conditions are applied on the boundary:
@@ -77,19 +84,23 @@ double serial_poisson(int n)
 	serial_transpose(b, bt, m);
 	serial_dst(b, m, n, true);
 
-	/*
-	 * Compute maximal value of solution for convergence analysis in L_\infty
-	 * norm.
-	 */
-	double u_max = serial_u_max(b, m);
-
 	/* Free memory */
 	free(diag);
-	free(grid);
-	free_2D_array(b);
 	free_2D_array(bt);
 
-	return u_max;
+	/* Calculate finish time */
+	gettimeofday(&tm, NULL);
+	double time_finish = tm.tv_sec + tm.tv_usec / 1000000.0;
+
+	/* Put result in struct */
+	poisson_result_t result = {
+		.time = time_finish - time_start,
+		.n = n,
+		.grid = grid,
+		.u = b
+	};
+
+	return result;
 }
 
 /*

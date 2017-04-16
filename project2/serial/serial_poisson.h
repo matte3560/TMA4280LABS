@@ -2,7 +2,7 @@
 
 #include "common_poisson.h"
 
-double serial_poisson(int n);
+poisson_result_t serial_poisson(int n);
 
 void serial_grid(double *grid, double h, int n);
 void serial_diag(double *diag, int m, int n);

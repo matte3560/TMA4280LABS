@@ -13,3 +13,5 @@ void test_print_vec(double* vec, int size);
 
 void test_cmp_vec(double* v1, double* v2, int size);
 void test_cmp_mat(double** m1, double** m2, int rows, int cols);
+
+double vtest_max_error(double** mat, double* grid, int n);
