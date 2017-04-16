@@ -165,14 +165,14 @@ void mpi_diag(double *diag, int m, int n)
 	mpi_allgather_vec(diag, m);
 }
 
-//void mpi_gen_rhs(double **b, double *grid, double h, int m)
-//{
-//	for (size_t i = 0; i < m; i++) {
-//		for (size_t j = 0; j < m; j++) {
-//			b[i][j] = h * h * poisson_rhs(grid[i+1], grid[j+1]);
-//		}
-//	}
-//}
+void mpi_gen_rhs(double **b, double *grid, double h, int m)
+{
+	for (size_t i = 0; i < m; i++) {
+		for (size_t j = 0; j < m; j++) {
+			b[i][j] = h * h * poisson_rhs(grid[i+1], grid[j+1]);
+		}
+	}
+}
 
 void mpi_dst(double **b, int m, int n, bool inv)
 {

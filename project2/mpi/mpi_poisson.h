@@ -17,7 +17,7 @@ int mpi_init(int *argc, char ***argv);
 int mpi_finalize();
 void mpi_grid(double *grid, double h, int n);
 void mpi_diag(double *diag, int m, int n);
-//void mpi_gen_rhs(double **b, double *grid, double h, int m);
+void mpi_gen_rhs(double **b, double *grid, double h, int m);
 void mpi_transpose(double **bt, double **b, int m);
 void mpi_dst(double **b, int m, int n, bool inv);
 //void mpi_solve_tu(double **b, double *diag, int m);
