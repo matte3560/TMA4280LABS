@@ -29,16 +29,16 @@ double mpi_poisson(int n)
 	/*
 	 * Grid points are generated with constant mesh size on both x- and y-axis.
 	 */
-	double *grid = mk_1D_array(n+1, false);
-	serial_grid(grid, h, n);
+	double *grid = mk_1D_array(mpi_padded_size(n+1), false);
+	mpi_grid(grid, h, n);
 
 	/*
 	 * The diagonal of the eigenvalue matrix of T is set with the eigenvalues
 	 * defined Chapter 9. page 93 of the Lecture Notes.
 	 * Note that the indexing starts from zero here, thus i+1.
 	 */
-	double *diag = mk_1D_array(m, false);
-	serial_diag(diag, m, n);
+	double *diag = mk_1D_array(mpi_padded_size(m), false);
+	mpi_diag(diag, m, n);
 
 	/*
 	 * Allocate the matrices b and bt which will be used for storing value of
@@ -67,6 +67,7 @@ double mpi_poisson(int n)
 	mpi_dst(b, m, n, false);
 	mpi_transpose(bt, b, m);
 	mpi_dst(bt, m, n, true);
+	mpi_allgather_mat(bt, m, m);
 
 	/*
 	 * Solve Lambda * \tilde U = \tilde G (Chapter 9. page 101 step 2)
@@ -79,6 +80,7 @@ double mpi_poisson(int n)
 	mpi_dst(bt, m, n, false);
 	mpi_transpose(b, bt, m);
 	mpi_dst(b, m, n, true);
+	mpi_allgather_mat(b, m, m);
 
 	/*
 	 * Compute maximal value of solution for convergence analysis in L_\infty
@@ -147,19 +149,21 @@ void mpi_transpose(double **bt, double **b, int m)
 	MPI_Type_free(&col);
 }
 
-//void mpi_grid(double *grid, double h, int n)
-//{
-//	for (size_t i = 0; i < n+1; i++) {
-//		grid[i] = i * h;
-//	}
-//}
+void mpi_grid(double *grid, double h, int n)
+{
+	for (size_t i = mpi_idx_start(n+1); i < mpi_idx_end(n+1); i++) {
+		grid[i] = i * h;
+	}
+	mpi_allgather_vec(grid, n+1);
+}
 
-//void mpi_diag(double *diag, int m, int n)
-//{
-//	for (size_t i = 0; i < m; i++) {
-//		diag[i] = 2.0 * (1.0 - cos((i+1) * PI / n));
-//	}
-//}
+void mpi_diag(double *diag, int m, int n)
+{
+	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
+		diag[i] = 2.0 * (1.0 - cos((i+1) * PI / n));
+	}
+	mpi_allgather_vec(diag, m);
+}
 
 //void mpi_gen_rhs(double **b, double *grid, double h, int m)
 //{
@@ -202,11 +206,6 @@ void mpi_dst(double **b, int m, int n, bool inv)
 			fst_(b[i], &n, z, &nn);
 		}
 	}
-
-	/* Distribute results to all processes */
-	MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-			b[0], part * mpi_padded_size(m), MPI_DOUBLE,
-			mpi_comm);
 }
 
 //void mpi_solve_tu(double **b, double *diag, int m)
@@ -287,4 +286,20 @@ size_t mpi_idx_part(const size_t size)
 size_t mpi_padded_size(const size_t size)
 {
 	return mpi_idx_part(size) * mpi_size;
+}
+
+void mpi_allgather_mat(double** mat, int m, int n)
+{
+	/* Distribute to all processes */
+	MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+			mat[0], mpi_idx_part(m) * mpi_padded_size(n), MPI_DOUBLE,
+			mpi_comm);
+}
+
+void mpi_allgather_vec(double* vec, int size)
+{
+	/* Distribute to all processes */
+	MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+			vec, mpi_idx_part(size), MPI_DOUBLE,
+			mpi_comm);
 }

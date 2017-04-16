@@ -9,6 +9,8 @@
 /* Function prototypes */
 void test_dst(int n);
 void test_transpose(int n);
+void test_diag(int n);
+void test_grid(int n);
 
 int main(int argc, char** argv)
 {
@@ -26,6 +28,18 @@ int main(int argc, char** argv)
 
 	MPI_TESTPRINT(Testing transpose with small matrix);
 	test_transpose(8);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing transpose with large matrix);
+	test_transpose(512);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing diagonal matrix generation function);
+	test_diag(32);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing grid generation function);
+	test_grid(32);
 	MPI_TESTPASS();
 
 	return mpi_finalize();
@@ -63,6 +77,7 @@ void test_dst(int n)
 
 	/* Apply parallel version and compare results */
 	mpi_dst(mat, m, n, false);
+	mpi_allgather_mat(mat, m, m);
 
 	MPI_RANK0(
 		if (n<=8) {
@@ -76,6 +91,7 @@ void test_dst(int n)
 	/* Also test inverse DST */
 	serial_dst(c_mat, m, n, true);
 	mpi_dst(mat, m, n, true);
+	mpi_allgather_mat(mat, m, m);
 
 	MPI_RANK0(
 		if (n<=8) {
@@ -139,4 +155,44 @@ void test_transpose(int n)
 	free_2D_array(mat);
 	free_2D_array(tmat);
 	free_2D_array(c_tmat);
+}
+
+void test_diag(int n)
+{
+	int m = n-1;
+
+	MPI_RANK0( printf("Using n = %i, m = %i\n", n, m); );
+
+	double diag[mpi_padded_size(m)];
+	double c_diag[m];
+
+	serial_diag(c_diag, m, n);
+	mpi_diag(diag, m, n);
+
+	MPI_RANK0(
+		puts("Result");
+		test_print_vec(diag, m);
+	);
+	
+	test_cmp_vec(diag, c_diag, m);
+}
+
+void test_grid(int n)
+{
+	double h = 1.0 / n;
+
+	MPI_RANK0( printf("Using n = %i, h = %f\n", n, h); );
+
+	double grid[mpi_padded_size(n+1)];
+	double c_grid[n+1];
+
+	serial_grid(c_grid, h, n);
+	mpi_grid(grid, h, n);
+
+	MPI_RANK0(
+		puts("Result");
+		test_print_vec(grid, n+1);
+	);
+
+	test_cmp_vec(grid, c_grid, n+1);
 }
