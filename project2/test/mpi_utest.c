@@ -11,6 +11,7 @@ void test_dst(int n);
 void test_transpose(int n);
 void test_diag(int n);
 void test_grid(int n);
+void test_gen_rhs(int n);
 
 int main(int argc, char** argv)
 {
@@ -40,6 +41,14 @@ int main(int argc, char** argv)
 
 	MPI_TESTPRINT(Testing grid generation function);
 	test_grid(32);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing RHS generation function with small size);
+	test_gen_rhs(8);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing RHS generation function with large size);
+	test_gen_rhs(512);
 	MPI_TESTPASS();
 
 	return mpi_finalize();
@@ -195,4 +204,42 @@ void test_grid(int n)
 	);
 
 	test_cmp_vec(grid, c_grid, n+1);
+}
+
+void test_gen_rhs(int n)
+{
+	int m = n-1;
+	double h = 1.0/n;
+
+	MPI_RANK0( printf("Using n = %i, m = %i, h = %f\n", n, m, h); );
+
+	/* Generate grid */
+	double grid[n+1];
+	serial_grid(grid, h, n);
+
+	/* Allocate arrays */
+	size_t padded_size = mpi_padded_size(m);
+	double** mat = mk_2D_array(padded_size, padded_size, false);
+	double** c_mat = mk_2D_array(m, m, false);
+
+	/* Generate rhs with serial and MPI func */
+	serial_gen_rhs(c_mat, grid, h, m);
+	mpi_gen_rhs(mat, grid, h, m);
+	mpi_allgather_mat(mat, m, m);
+
+	MPI_RANK0(
+		if (n<=8) {
+			puts("Result");
+			test_print_mat(mat, m, m);
+		} else {
+			puts("Too large to print...");
+		}
+	);
+
+	/* Check for correct result */
+	test_cmp_mat(mat, c_mat, m, m);
+
+	/* Free mem */
+	free_2D_array(mat);
+	free_2D_array(c_mat);
 }

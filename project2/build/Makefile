@@ -19,9 +19,9 @@ FFLAGS+=$(INCLUDE)
 # Object files
 COMMON=common_poisson.o fst.o
 COMMON_TEST=common_test.o
-COMMON_MPI_TEST=$(COMMON_TEST)
+COMMON_MPI_TEST=$(COMMON_TEST) serial_poisson.o # serial_poisson.o needed to compare with serial implementation
 SERIAL_COMMON=serial_poisson.o $(COMMON)
-MPI_COMMON=mpi_poisson.o serial_poisson.o $(COMMON) # serial_poisson.o needed for functions w/o MPI implementation
+MPI_COMMON=mpi_poisson.o serial_poisson.o $(COMMON)
 
 # Objects containing right hand side function only
 # They all have the same identifier, so you should always link one and only one

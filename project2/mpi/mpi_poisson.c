@@ -10,7 +10,6 @@
  */
 
 #include "mpi_poisson.h"
-#include "serial_poisson.h" // For functions not yet implemented with MPI
 
 #include <stdio.h>
 
