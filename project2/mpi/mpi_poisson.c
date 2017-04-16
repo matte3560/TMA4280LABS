@@ -12,6 +12,7 @@
 #include "mpi_poisson.h"
 #include "serial_poisson.h" // For functions not yet implemented with MPI
 
+#include <stdio.h>
 
 double mpi_poisson(int n)
 {
@@ -64,7 +65,7 @@ double mpi_poisson(int n)
 	 * array (first argument) so that the initial values are overwritten.
 	 */
 	mpi_dst(b, m, n, false);
-	serial_transpose(bt, b, m);
+	mpi_transpose(bt, b, m);
 	mpi_dst(bt, m, n, true);
 
 	/*
@@ -76,7 +77,7 @@ double mpi_poisson(int n)
 	 * Compute U = S^-1 * (S * Utilde^T) (Chapter 9. page 101 step 3)
 	 */
 	mpi_dst(bt, m, n, false);
-	serial_transpose(b, bt, m);
+	mpi_transpose(b, bt, m);
 	mpi_dst(b, m, n, true);
 
 	/*
@@ -114,14 +115,37 @@ int mpi_finalize()
  * In parallel the function MPI_Alltoallv is used to map directly the entries
  * stored in the array to the block structure, using displacement arrays.
  */
-//void mpi_transpose(double **bt, double **b, int m)
-//{
-//	for (size_t i = 0; i < m; i++) {
-//		for (size_t j = 0; j < m; j++) {
-//			bt[i][j] = b[j][i];
-//		}
-//	}
-//}
+void mpi_transpose(double **bt, double **b, int m)
+{
+	/* Indexing */
+	size_t start = mpi_idx_start(m);
+	size_t part = mpi_idx_part(m);
+	size_t padded_size = mpi_padded_size(m);
+
+	/* Create rows datatype */
+	MPI_Datatype rows;
+	MPI_Type_vector(part, padded_size, padded_size, MPI_DOUBLE, &rows);
+	MPI_Type_commit(&rows);
+
+	/* Create cols datatype */
+	MPI_Datatype col;
+	MPI_Type_vector(padded_size, 1, padded_size, MPI_DOUBLE, &col);
+	MPI_Datatype cols;
+	MPI_Type_create_hvector(part, 1, sizeof(double), col, &cols);
+	MPI_Type_commit(&cols);
+
+	MPI_Request requests[2*mpi_size];
+	for (int i = 0; i < mpi_size; i++) {
+		MPI_Isend(b[0] + start * padded_size, 1, rows, i, 0, mpi_comm, requests + i);
+		MPI_Irecv(bt[0] + i * part, 1, cols, i, 0, mpi_comm, requests + mpi_size + i);
+	}
+	MPI_Waitall(2*mpi_size, requests, MPI_STATUS_IGNORE);
+
+	/* Free datatypes */
+	MPI_Type_free(&rows);
+	MPI_Type_free(&cols);
+	MPI_Type_free(&col);
+}
 
 //void mpi_grid(double *grid, double h, int n)
 //{

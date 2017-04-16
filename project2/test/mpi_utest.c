@@ -8,6 +8,7 @@
 
 /* Function prototypes */
 void test_dst(int n);
+void test_transpose(int n);
 
 int main(int argc, char** argv)
 {
@@ -21,6 +22,10 @@ int main(int argc, char** argv)
 
 	MPI_TESTPRINT(Testing DST with larger matrix);
 	test_dst(512);
+	MPI_TESTPASS();
+
+	MPI_TESTPRINT(Testing transpose with small matrix);
+	test_transpose(8);
 	MPI_TESTPASS();
 
 	return mpi_finalize();
@@ -39,7 +44,7 @@ void test_dst(int n)
 
 	MPI_RANK0(
 		printf("n = %i, m = %i\n", n, m);
-		printf("Using %ix%i matrix.\n", m, m);
+		printf("Using %ix%i matrix\n", m, m);
 		if (n<=8) {
 			puts("Before");
 			test_print_mat(mat, m, m);
@@ -59,12 +64,12 @@ void test_dst(int n)
 	/* Apply parallel version and compare results */
 	mpi_dst(mat, m, n, false);
 
-	if (n<=8) {
-		MPI_RANK0(
+	MPI_RANK0(
+		if (n<=8) {
 			puts("After DST");
 			test_print_mat(mat, m, m);
-		);
-	}
+		}
+	);
 
 	test_cmp_mat(mat, c_mat, m, m);
 
@@ -72,12 +77,66 @@ void test_dst(int n)
 	serial_dst(c_mat, m, n, true);
 	mpi_dst(mat, m, n, true);
 
-	if (n<=8) {
-		MPI_RANK0(
+	MPI_RANK0(
+		if (n<=8) {
 			puts("After DST and inverse DST");
 			test_print_mat(mat, m, m);
-		);
-	}
+		}
+	);
 
 	test_cmp_mat(mat, c_mat, m, m);
+
+	/* Free memory */
+	free_2D_array(mat);
+	free_2D_array(c_mat);
+}
+
+void test_transpose(int n)
+{
+	/* Indexing */
+	size_t padded_size = mpi_padded_size(n);
+
+	/* Create matrix to transpose */
+	double** mat = mk_2D_array(padded_size, padded_size, false);
+	for (int i = 0; i < n; i++) {
+		for (int j = 0; j < n; j++) {
+			mat[i][j] = n*i + j;
+		}
+	}
+
+	MPI_RANK0(
+		printf("Using %ix%i matrix\n", n, n);
+		if (n<=8) {
+			puts("Before");
+			test_print_mat(mat, n, n);
+		} else {
+			puts("Matrix too big to print...");
+		}
+	);
+
+	/*
+	 * Transpose using serial version to generate correct result.
+	 * (This assumes that the unit tests for the serial implementation
+	 * has been successfully run first)
+	 */
+	double** c_tmat = mk_2D_array(n, n, false);
+	serial_transpose(c_tmat, mat, n);
+
+	/* Transpose with MPI implementation and compare result */
+	double** tmat = mk_2D_array(padded_size, padded_size, false);
+	mpi_transpose(tmat, mat, n);
+
+	MPI_RANK0(
+		if (n<=8) {
+			puts("After");
+			test_print_mat(tmat, n, n);
+		}
+	);
+
+	test_cmp_mat(tmat, c_tmat, n, n);
+
+	/* Free memory */
+	free_2D_array(mat);
+	free_2D_array(tmat);
+	free_2D_array(c_tmat);
 }
