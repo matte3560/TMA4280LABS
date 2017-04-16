@@ -66,6 +66,6 @@ void test_index() {
 	size_t size = mpi_idx_size(m);
 	MPI_SYNC( printf("Rank %i unpadded partition size = %zu\n", mpi_rank, size); );
 
-	size_t c_size = end - start;
+	size_t c_size = start < end ? end - start : 0;
 	assert( size == c_size );
 }
