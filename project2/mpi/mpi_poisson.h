@@ -20,8 +20,8 @@ void mpi_diag(double *diag, int m, int n);
 void mpi_gen_rhs(double **b, double *grid, double h, int m);
 void mpi_transpose(double **bt, double **b, int m);
 void mpi_dst(double **b, int m, int n, bool inv);
-//void mpi_solve_tu(double **b, double *diag, int m);
-//double mpi_u_max(double **b, int m);
+void mpi_solve_tu(double **b, double *diag, int m);
+double mpi_u_max(double **b, int m);
 
 /* Array related functions */
 size_t mpi_idx_start(const size_t size);

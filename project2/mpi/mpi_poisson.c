@@ -52,7 +52,7 @@ double mpi_poisson(int n)
 	 * Note that the right hand-side is set at nodes corresponding to degrees
 	 * of freedom, so it excludes the boundary (bug fixed by petterjf 2017).
 	 */
-	serial_gen_rhs(b, grid, h, m);
+	mpi_gen_rhs(b, grid, h, m);
 
 	/*
 	 * Compute \tilde G^T = S^-1 * (S * G)^T (Chapter 9. page 101 step 1)
@@ -67,12 +67,11 @@ double mpi_poisson(int n)
 	mpi_dst(b, m, n, false);
 	mpi_transpose(bt, b, m);
 	mpi_dst(bt, m, n, true);
-	mpi_allgather_mat(bt, m, m);
 
 	/*
 	 * Solve Lambda * \tilde U = \tilde G (Chapter 9. page 101 step 2)
 	 */
-	serial_solve_tu(bt, diag, m);
+	mpi_solve_tu(bt, diag, m);
 
 	/*
 	 * Compute U = S^-1 * (S * Utilde^T) (Chapter 9. page 101 step 3)
@@ -80,13 +79,12 @@ double mpi_poisson(int n)
 	mpi_dst(bt, m, n, false);
 	mpi_transpose(b, bt, m);
 	mpi_dst(b, m, n, true);
-	mpi_allgather_mat(b, m, m);
 
 	/*
 	 * Compute maximal value of solution for convergence analysis in L_\infty
 	 * norm.
 	 */
-	double u_max = serial_u_max(b, m);
+	double u_max = mpi_u_max(b, m);
 
 	/* Free memory */
 	free(diag);
@@ -130,23 +128,21 @@ void mpi_transpose(double **bt, double **b, int m)
 	MPI_Type_commit(&rows);
 
 	/* Create cols datatype */
-	MPI_Datatype col;
-	MPI_Type_vector(padded_size, 1, padded_size, MPI_DOUBLE, &col);
 	MPI_Datatype cols;
-	MPI_Type_create_hvector(part, 1, sizeof(double), col, &cols);
+	MPI_Type_vector(padded_size, 1, padded_size, MPI_DOUBLE, &cols);
+	MPI_Type_create_hvector(part, 1, sizeof(double), cols, &cols);
+	MPI_Type_create_resized(cols, 0, part*sizeof(double), &cols);
 	MPI_Type_commit(&cols);
 
-	MPI_Request requests[2*mpi_size];
-	for (int i = 0; i < mpi_size; i++) {
-		MPI_Isend(b[0] + start * padded_size, 1, rows, i, 0, mpi_comm, requests + i);
-		MPI_Irecv(bt[0] + i * part, 1, cols, i, 0, mpi_comm, requests + mpi_size + i);
-	}
-	MPI_Waitall(2*mpi_size, requests, MPI_STATUS_IGNORE);
+	/* Perform transpose */
+	MPI_Allgather(
+			b[0] + start * padded_size, 1, rows,
+			bt[0], 1, cols,
+			mpi_comm);
 
 	/* Free datatypes */
 	MPI_Type_free(&rows);
 	MPI_Type_free(&cols);
-	MPI_Type_free(&col);
 }
 
 void mpi_grid(double *grid, double h, int n)
@@ -167,7 +163,7 @@ void mpi_diag(double *diag, int m, int n)
 
 void mpi_gen_rhs(double **b, double *grid, double h, int m)
 {
-	for (size_t i = 0; i < m; i++) {
+	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
 		for (size_t j = 0; j < m; j++) {
 			b[i][j] = h * h * poisson_rhs(grid[i+1], grid[j+1]);
 		}
@@ -208,25 +204,31 @@ void mpi_dst(double **b, int m, int n, bool inv)
 	}
 }
 
-//void mpi_solve_tu(double **b, double *diag, int m)
-//{
-//	for (size_t i = 0; i < m; i++) {
-//		for (size_t j = 0; j < m; j++) {
-//			b[i][j] = b[i][j] / (diag[i] + diag[j]);
-//		}
-//	}
-//}
+void mpi_solve_tu(double **b, double *diag, int m)
+{
+	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
+		for (size_t j = 0; j < m; j++) {
+			b[i][j] = b[i][j] / (diag[i] + diag[j]);
+		}
+	}
+}
 
-//double mpi_u_max(double **b, int m)
-//{
-//	double u_max = 0.0;
-//	for (size_t i = 0; i < m; i++) {
-//		for (size_t j = 0; j < m; j++) {
-//			u_max = MAX(b[i][j], u_max);
-//		}
-//	}
-//	return u_max;
-//}
+double mpi_u_max(double **b, int m)
+{
+	/* Calculate local umax */
+	double u_max = 0.0;
+	for (size_t i = mpi_idx_start(m); i < mpi_idx_end(m); i++) {
+		for (size_t j = 0; j < m; j++) {
+			u_max = MAX(b[i][j], u_max);
+		}
+	}
+
+	/* Get global umax */
+	double global_u_max = 0.0;
+	MPI_Allreduce(&u_max, &global_u_max, 1, MPI_DOUBLE, MPI_MAX, mpi_comm);
+
+	return global_u_max;
+}
 
 size_t mpi_idx_start(const size_t size)
 {
