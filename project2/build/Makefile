@@ -35,7 +35,7 @@ RHS_VTEST=rhs_vtest.o	# Right hand side with known exact solution, used for vtes
 hybrid_%.o: CFLAGS+=-fopenmp
 
 # Targets
-all: serial mpi
+all: serial mpi hybrid
 
 utest: serial_utest mpi_idx_utest mpi_utest hybrid_utest
 
