@@ -26,12 +26,14 @@ filename_output = options.output
 # Parse data from files
 grid = np.genfromtxt(filename_grid, dtype=float, delimiter=";")
 u = np.genfromtxt(filename_u, dtype=float, delimiter=";")
-n = grid.shape[0]-1
+
+# Add boundary
+u = np.pad(u, 1, 'constant')
 
 # Create plot
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-X, Y = np.meshgrid(grid[1:n], grid[1:n])
+X, Y = np.meshgrid(grid, grid)
 ax.plot_surface(X, Y, u, cmap=plt.cm.plasma)
 
 # Set display region and labels
