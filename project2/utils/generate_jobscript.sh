@@ -17,15 +17,13 @@ fi
 NAME=$1
 FILE="${NAME}_job.sh"
 COMMAND=$2
+NUM_PROCS=0
+NUM_THR=0
 if [ $# -ge 3 ]; then
 	NUM_PROCS=$3
-else
-	NUM_PROCS=0
 fi
 if [ $# -ge 4 ]; then
 	NUM_THR=$4
-else
-	NUM_THR=0
 fi
 
 # Output to jobscript
@@ -44,10 +42,7 @@ printf "Writing jobscript to ${FILE}\n"
 			printf ":mpiprocs=${NUM_PROCS}"
 		fi
 	else
-		printf "#PBS -l select=2:ncpus=20"
-		if [ $NUM_PROCS -ne 0 ]; then
-			printf ":mpiprocs=$(expr ${NUM_PROCS} / 2)"
-		fi
+		printf "#PBS -l select=2:ncpus=20:mpiprocs=$(expr ${NUM_PROCS} / 2)"
 	fi
 	# Append number of threads if provided and end the line
 	if [ $NUM_THR -ne 0 ]; then
