@@ -94,9 +94,9 @@ run_vtest: vtest
 	# Serial implementation
 	./serial_vtest
 	# MPI implementation
-	mpirun -n 4 mpi_vtest
+	mpirun -n 8 mpi_vtest
 	# Hybrid implementation
-	mpirun -n 4 hybrid_vtest
+	mpirun -n 8 hybrid_vtest
 
 clean:
 	$(RM) *.o *.d

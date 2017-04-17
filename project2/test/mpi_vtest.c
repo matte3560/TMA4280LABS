@@ -11,6 +11,8 @@ int main(int argc, char** argv)
 {
 	mpi_init(&argc, &argv);
 
+	MPI_RANK0( printf("Running with %i processes\n", mpi_size); );
+
 	for (int i = 2; i <= 11; i++) {
 		/* Get result */
 		int n = 1 << i;

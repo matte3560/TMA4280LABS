@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include <omp.h>
 
 #include "serial_poisson.h"
 #include "hybrid_poisson.h"
@@ -18,7 +17,7 @@ int main(int argc, char** argv)
 {
 	mpi_init(&argc, &argv);
 
-	MPI_RANK0( printf("Running tests with %i processes and %i threads\n", mpi_size, omp_get_num_threads()); );
+	MPI_RANK0( printf("Running tests with %i processes\n", mpi_size); );
 
 	MPI_TESTPRINT(Testing DST with small matrix);
 	test_dst(8);
