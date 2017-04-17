@@ -9,21 +9,14 @@ from mpl_toolkits.mplot3d import Axes3D
 parser = argparse.ArgumentParser(
         description='Used to plot poisson problem result stored in CSV files.')
 parser.add_argument('grid', type=str,
-        help='CSV file containing grid data.'
-        )
+        help='CSV file containing grid data.')
 parser.add_argument('u', type=str,
-        help='CSV file containing result matrix data.'
-        )
+        help='CSV file containing result matrix data.')
 parser.add_argument('output', type=str,
-        help='Output filename (without extension).'
-        )
+        help='Output filename (without extension).')
 parser.add_argument('-e', '--eps', action='store_true',
-        help='Output to EPS format (for use in LaTeX document).'
-        )
+        help='Output to EPS format (for use in LaTeX document).')
 options = parser.parse_args()
-
-# Decide output format
-use_eps = options.eps
 
 # Get filenames
 filename_grid = options.grid
@@ -49,7 +42,7 @@ ax.set_ylabel('y-axis')
 ax.set_zlabel('u')
 
 # Output to file
-if use_eps:
+if options.eps:
     fig.savefig( filename_output + '.eps', format='eps', dpi=1000)
 else:
-    fig.savefig( filename_output + '.png', format='png', dpi=1000)
+    fig.savefig( filename_output + '.png', format='png', dpi=250)
