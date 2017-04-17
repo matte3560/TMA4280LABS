@@ -17,6 +17,7 @@ int main(int argc, char **argv)
 
 	poisson_result_t result = serial_poisson(n);
 	printf("(n = %i) Time: %f\n", n, result.time);
+	export_result(&result, "serial_result");
 	finalize_result(&result);
 
 	return 0;

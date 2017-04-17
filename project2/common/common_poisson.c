@@ -1,6 +1,7 @@
 #include "common_poisson.h"
 
 #include <string.h> // memcpy???
+#include <stdio.h>
 
 
 double *mk_1D_array(size_t n, bool zero)
@@ -72,4 +73,32 @@ void finalize_result(poisson_result_t* result)
 {
 	free( result->grid );
 	free_2D_array( result->u );
+}
+
+void export_result(poisson_result_t* result, const char* name)
+{
+	/* Filenames */
+	char grid_filename[64], u_filename[64];
+	sprintf(grid_filename, "%s_grid.csv", name);
+	sprintf(u_filename, "%s_u.csv", name);
+
+	printf("Exporting results to %s and %s\n", grid_filename, u_filename);
+
+	/* Export grid data */
+	FILE* grid_file = fopen(grid_filename, "w");
+	fprintf(grid_file, "%.10f", result->grid[0]); // No delimiter at start of line
+	for (int i = 1; i <= result->n; i++) {
+		fprintf(grid_file, "%s%.10f", DELIM, result->grid[i]);
+	}
+	fprintf(grid_file, "\n"); // End line
+
+	/* Export solution data (u) */
+	FILE* u_file = fopen(u_filename, "w");
+	for (int i = 0; i < result->n-1; i++) {
+		fprintf(u_file, "%.10f", result->u[i][0]); // No delimiter at start of line
+		for (int j = 1; j < result->n-1; j++) {
+			fprintf(u_file, "%s%.10f", DELIM, result->u[i][j]);
+		}
+		fprintf(u_file, "\n");
+	}
 }

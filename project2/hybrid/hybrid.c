@@ -21,6 +21,7 @@ int main(int argc, char **argv)
 	poisson_result_t result = hybrid_poisson(n);
 	if (mpi_rank == 0) {
 		printf("(P = %2i, n = %5i) Time: = %f\n", mpi_size, n, result.time);
+		export_result(&result, "hybrid_result");
 	}
 	finalize_result(&result);
 

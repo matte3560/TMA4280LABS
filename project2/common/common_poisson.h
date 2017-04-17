@@ -9,6 +9,9 @@
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define PI 3.14159265358979323846
 
+/* Used as delimiter in exported results */
+#define DELIM ";"
+
 /* Struct used to contain result */
 typedef struct r {
 	double time;
@@ -32,3 +35,4 @@ double **dup_2D_array(double **array, size_t n1, size_t n2);
 void free_2D_array(double **array);
 
 void finalize_result(poisson_result_t* result);
+void export_result(poisson_result_t* result, const char* name);
