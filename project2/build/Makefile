@@ -29,9 +29,7 @@ RHS_SAMPLE=rhs_sample.o	# Taken from sample code: f(x,y) = 2 * (y - y*y + x - x*
 RHS_CONST=rhs_const.o	# From Question 1: f(x,y) = 1
 RHS_VTEST=rhs_vtest.o	# Right hand side with known exact solution, used for vtest
 
-# Not sure if needed...
-#mpi_%.o: CC=mpicc
-#hybrid_%.o: CC=mpicc
+# Special flags for OpenMP
 hybrid_%.o: CFLAGS+=-fopenmp
 
 # Targets

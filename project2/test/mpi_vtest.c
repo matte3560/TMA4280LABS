@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #include "mpi_poisson.h"
-#include "common_test.h"
+#include "common_mpi_test.h"
 
 /* Function prototypes */
 

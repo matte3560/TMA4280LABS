@@ -83,9 +83,12 @@ poisson_result_t mpi_poisson(int n)
 	mpi_transpose(b, bt, m);
 	mpi_dst(b, m, n, true);
 
-	/* Gather final result */
-	double** u = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
-	mpi_allgather_mat(u, b, m, m);
+	/* Gather final result on rank 0 */
+	double** u = NULL;
+	if (mpi_rank == 0) {
+		u = mk_2D_array(mpi_padded_size(m), mpi_padded_size(m), false);
+	}
+	mpi_gather_mat(u, b, m, m);
 
 	/* Free memory */
 	free(diag);
@@ -341,4 +344,17 @@ void mpi_allgather_vec(double* gvec, double* lvec, int size)
 			lvec, part, MPI_DOUBLE,
 			gvec, part, MPI_DOUBLE,
 			mpi_comm);
+}
+
+void mpi_gather_mat(double** gmat, double** lmat, int m, int n)
+{
+	/* Indexing */
+	size_t part = mpi_idx_part(m);
+	size_t padded_size = mpi_padded_size(n);
+
+	/* Gather on root process */
+	MPI_Gather(
+			lmat[0], part * padded_size, MPI_DOUBLE,
+			(gmat == NULL) ? NULL : gmat[0], part * padded_size, MPI_DOUBLE,
+			0, mpi_comm);
 }

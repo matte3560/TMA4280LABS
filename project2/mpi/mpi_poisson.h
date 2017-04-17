@@ -31,3 +31,4 @@ size_t mpi_idx_part(const size_t size);
 size_t mpi_padded_size(const size_t size);
 void mpi_allgather_mat(double** gmat, double** lmat, int m, int n);
 void mpi_allgather_vec(double* gvec, double* lvec, int size);
+void mpi_gather_mat(double** gmat, double** lmat, int m, int n);

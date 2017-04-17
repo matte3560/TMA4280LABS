@@ -62,7 +62,9 @@ double **dup_2D_array(double **array, size_t n1, size_t n2)
 void free_2D_array(double **array)
 {
 	/* Free underlying array first */
-	free(array[0]);
+	if (array != NULL) {
+		free(array[0]);
+	}
 	free(array);
 }
 
