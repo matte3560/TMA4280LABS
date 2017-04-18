@@ -48,11 +48,7 @@ printf "Writing jobscript to ${FILE}\n"
 	# Request resources
 	printf "#PBS -l select=${NODES}:ncpus=20"
 	if [ $NUM_PROCS -ne 0 ]; then
-		if [ $NODES -eq 1 ]; then
-			printf ":mpiprocs=${NUM_PROCS}"
-		else
-			printf ":mpiprocs=$(expr ${NUM_PROCS} / 2)"
-		fi
+		printf ":mpiprocs=$(expr ${NUM_PROCS} / $NODES)"
 	fi
 	# Append number of threads if provided and end the line
 	if [ $NUM_THR -ne 0 ]; then
