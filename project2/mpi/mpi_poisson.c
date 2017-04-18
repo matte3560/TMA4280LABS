@@ -133,28 +133,28 @@ int mpi_finalize()
 void mpi_transpose(double **bt, double **b, int m)
 {
 	/* Indexing */
-	size_t start = mpi_idx_start(m);
 	size_t part = mpi_idx_part(m);
 	size_t padded_size = mpi_padded_size(m);
 
 	/* Create block datatype */
 	MPI_Datatype block;
 	MPI_Type_vector(part, part, padded_size, MPI_DOUBLE, &block);
-	MPI_Type_create_resized(block, 0, part*sizeof(double), &block);
 	MPI_Type_commit(&block);
 
 	/* Create transposed block datatype */
 	MPI_Datatype transp_block;
 	MPI_Type_vector(part, 1, padded_size, MPI_DOUBLE, &transp_block);
 	MPI_Type_create_hvector(part, 1, sizeof(double), transp_block, &transp_block);
-	MPI_Type_create_resized(transp_block, 0, part*sizeof(double), &transp_block);
 	MPI_Type_commit(&transp_block);
 
 	/* Perform transpose */
-	MPI_Alltoall(
-			b[0], 1, block,
-			bt[0], 1, transp_block,
-			mpi_comm);
+	MPI_Request requests[2*mpi_size];
+	for (int i = 0; i < mpi_size; i++)
+	{
+		MPI_Isend(b[0] + i*part, 1, block, i, 0, mpi_comm, requests + i);
+		MPI_Irecv(bt[0] + i*part, 1, transp_block, i, 0, mpi_comm, requests + mpi_size + i);
+	}
+	MPI_Waitall(2*mpi_size, requests, MPI_STATUS_IGNORE);
 
 	/* Free datatypes */
 	MPI_Type_free(&block);
