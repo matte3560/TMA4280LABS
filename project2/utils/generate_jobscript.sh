@@ -47,15 +47,16 @@ printf "Writing jobscript to ${FILE}\n"
 
 	# Request resources
 	printf "#PBS -l select=${NODES}:ncpus=20"
+	# Append number of processes if provided
 	if [ $NUM_PROCS -ne 0 ]; then
 		printf ":mpiprocs=$(expr ${NUM_PROCS} / $NODES)"
 	fi
-	# Append number of threads if provided and end the line
+	# Append number of threads if provided
 	if [ $NUM_THR -ne 0 ]; then
-		printf ":ompthreads=${NUM_THR}\n\n"
-	else
-		printf "\n\n"
+		printf ":ompthreads=${NUM_THR}"
 	fi
+	# End line
+	printf "\n\n"
 
 	# Change into dir job was submitted from and load modules
 	printf 'cd $PBS_O_WORKDIR'
