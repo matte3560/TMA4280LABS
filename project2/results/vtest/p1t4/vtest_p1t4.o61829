@@ -1,0 +1,11 @@
+Running with 1 processes
+(n =    4) Time:  0.0022		Max error: 0.192771
+(n =    8) Time:  0.0001		Max error: 0.044762
+(n =   16) Time:  0.0004		Max error: 0.010989
+(n =   32) Time:  0.0016		Max error: 0.002735
+(n =   64) Time:  0.0070		Max error: 0.000683
+(n =  128) Time:  0.0263		Max error: 0.000171
+(n =  256) Time:  0.0803		Max error: 0.000043
+(n =  512) Time:  0.2450		Max error: 0.000011
+(n = 1024) Time:  1.0615		Max error: 0.000003
+(n = 2048) Time:  4.7159		Max error: 0.000001
