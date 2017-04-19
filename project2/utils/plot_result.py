@@ -45,6 +45,6 @@ ax.set_zlabel('u')
 
 # Output to file
 if options.eps:
-    fig.savefig( filename_output + '.eps', format='eps', dpi=1000)
+    fig.savefig( filename_output + '.eps', format='eps', dpi=500)
 else:
     fig.savefig( filename_output + '.png', format='png', dpi=250)
