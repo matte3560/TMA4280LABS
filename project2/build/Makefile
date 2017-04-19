@@ -30,6 +30,7 @@ HYBRID_COMMON=hybrid_poisson.o $(MPI_COMMON)
 RHS_SAMPLE=rhs_sample.o	# Taken from sample code: f(x,y) = 2 * (y - y*y + x - x*x)
 RHS_CONST=rhs_const.o	# From Question 1: f(x,y) = 1
 RHS_VTEST=rhs_vtest.o	# Right hand side with known exact solution, used for vtest
+RHS_CONT=rhs_cont.o	# Continuous right hand side function
 
 # Special flags for OpenMP
 hybrid_%.o: CFLAGS+=-fopenmp
@@ -43,11 +44,23 @@ vtest: serial_vtest mpi_vtest hybrid_vtest
 
 serial: serial.o $(SERIAL_COMMON) $(RHS_CONST)
 
+serial_alt1: serial.o $(SERIAL_COMMON) $(RHS_VTEST)
+	$(CC) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+serial_alt2: serial.o $(SERIAL_COMMON) $(RHS_CONT)
+	$(CC) $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
 serial_utest: serial_utest.o $(SERIAL_COMMON) $(COMMON_TEST) $(RHS_CONST)
 
 serial_vtest: serial_vtest.o $(SERIAL_COMMON) $(COMMON_TEST) $(RHS_VTEST)
 
 mpi: mpi.o $(MPI_COMMON) $(RHS_CONST)
+	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+mpi_alt1: mpi.o $(MPI_COMMON) $(RHS_VTEST)
+	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+mpi_alt2: mpi.o $(MPI_COMMON) $(RHS_CONT)
 	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 mpi_utest: mpi_utest.o $(MPI_COMMON) $(COMMON_MPI_TEST) $(RHS_CONST)
@@ -60,6 +73,12 @@ mpi_vtest: mpi_vtest.o $(MPI_COMMON) $(COMMON_MPI_TEST) $(RHS_VTEST)
 	mpicc $(LDFLAGS) $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 hybrid: hybrid.o $(HYBRID_COMMON) $(RHS_CONST)
+	mpicc $(LDFLAGS) -fopenmp $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+hybrid_alt1: hybrid.o $(HYBRID_COMMON) $(RHS_VTEST)
+	mpicc $(LDFLAGS) -fopenmp $^ $(LOADLIBES) $(LDLIBS) -o $@
+
+hybrid_alt2: hybrid.o $(HYBRID_COMMON) $(RHS_CONT)
 	mpicc $(LDFLAGS) -fopenmp $^ $(LOADLIBES) $(LDLIBS) -o $@
 
 hybrid_vtest: hybrid_vtest.o $(HYBRID_COMMON) $(COMMON_MPI_TEST) $(RHS_VTEST)
@@ -103,6 +122,7 @@ clean:
 
 purge: clean
 	$(RM) serial mpi hybrid
+	$(RM) *_alt1 *_alt2
 	$(RM) *_utest *_vtest
 
 clean_results:
